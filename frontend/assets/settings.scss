@@ -1,0 +1,8 @@
+$family: "MiFuentePersonalizada", sans-serif;
+// $family: "Custom Century Gothic", sans-serif;
+@use "vuetify/settings" with (
+  $body-font-family: $family,
+  $field-border-radius:10px
+);
+// Importamos los fonts personalizados
+@import 'css/custom-fonts.scss';

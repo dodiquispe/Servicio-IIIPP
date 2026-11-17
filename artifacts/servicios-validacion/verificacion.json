@@ -1,0 +1,94 @@
+{
+  "days": {
+    "datos": "dia_semana"
+  },
+  "createdId": "3300f440-770a-468f-be72-613e4334923c",
+  "initialSchedules": [
+    {
+      "id_servicio": "3300f440-770a-468f-be72-613e4334923c",
+      "id_dia": 3,
+      "hora_inicio": "08:30",
+      "hora_fin": "12:30",
+      "id_estado": 1
+    },
+    {
+      "id_servicio": "3300f440-770a-468f-be72-613e4334923c",
+      "id_dia": 3,
+      "hora_inicio": "14:30",
+      "hora_fin": "18:30",
+      "id_estado": 1
+    },
+    {
+      "id_servicio": "3300f440-770a-468f-be72-613e4334923c",
+      "id_dia": 4,
+      "hora_inicio": "08:30",
+      "hora_fin": "12:30",
+      "id_estado": 1
+    },
+    {
+      "id_servicio": "3300f440-770a-468f-be72-613e4334923c",
+      "id_dia": 4,
+      "hora_inicio": "14:30",
+      "hora_fin": "18:30",
+      "id_estado": 1
+    },
+    {
+      "id_servicio": "3300f440-770a-468f-be72-613e4334923c",
+      "id_dia": 5,
+      "hora_inicio": "08:30",
+      "hora_fin": "12:30",
+      "id_estado": 1
+    },
+    {
+      "id_servicio": "3300f440-770a-468f-be72-613e4334923c",
+      "id_dia": 5,
+      "hora_inicio": "14:30",
+      "hora_fin": "18:30",
+      "id_estado": 1
+    },
+    {
+      "id_servicio": "3300f440-770a-468f-be72-613e4334923c",
+      "id_dia": 6,
+      "hora_inicio": "08:30",
+      "hora_fin": "12:30",
+      "id_estado": 1
+    },
+    {
+      "id_servicio": "3300f440-770a-468f-be72-613e4334923c",
+      "id_dia": 6,
+      "hora_inicio": "14:30",
+      "hora_fin": "18:30",
+      "id_estado": 1
+    },
+    {
+      "id_servicio": "3300f440-770a-468f-be72-613e4334923c",
+      "id_dia": 7,
+      "hora_inicio": "08:30",
+      "hora_fin": "12:30",
+      "id_estado": 1
+    },
+    {
+      "id_servicio": "3300f440-770a-468f-be72-613e4334923c",
+      "id_dia": 7,
+      "hora_inicio": "14:30",
+      "hora_fin": "18:30",
+      "id_estado": 1
+    }
+  ],
+  "validations": [
+    "Capacidad simultánea es obligatorio",
+    "La capacidad simultánea debe ser un número entero mayor o igual a 1",
+    "Duración de sesión (minutos) es obligatorio",
+    "La duración de sesión debe ser mayor a 15 minutos"
+  ],
+  "search": {
+    "texto": "Codex prueba 1794847235787",
+    "campos": [
+      "servicio",
+      "descripcion"
+    ]
+  },
+  "debounceAndEnter": "OK",
+  "duplicateMessage": "Ya existe un servicio activo con el nombre “CODEX PRUEBA 1794847235787”.",
+  "sourceItems": "Debounce y limpieza sin GraphQL"
+}

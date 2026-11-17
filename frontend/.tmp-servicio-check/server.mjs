@@ -1,0 +1,1 @@
+import {createServer} from 'vite';import vue from '@vitejs/plugin-vue';const server=await createServer({configFile:false,root:process.cwd(),plugins:[vue()],resolve:{alias:{'~':process.cwd()}},server:{host:'127.0.0.1',port:4193,strictPort:true,proxy:{'/graphql':'http://127.0.0.1:4192'}}});await server.listen();console.log('Frontend de verificación:4193');

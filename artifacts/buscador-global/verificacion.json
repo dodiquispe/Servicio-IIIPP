@@ -1,0 +1,42 @@
+[
+  {
+    "mode": "services",
+    "inputs": 1,
+    "label": "Buscar por Servicio o Descripción",
+    "criteria": {
+      "texto": "Consulta",
+      "campos": [
+        "servicio",
+        "descripcion"
+      ]
+    },
+    "enterAndClear": "OK"
+  },
+  {
+    "mode": "fixed",
+    "inputs": 1,
+    "label": "Buscar por Servicio o Descripción",
+    "criteria": {
+      "texto": "Consulta",
+      "campos": [
+        "servicio",
+        "descripcion"
+      ],
+      "id_estado": 1
+    },
+    "enterAndClear": "OK"
+  },
+  {
+    "mode": "source",
+    "inputs": 1,
+    "label": "Buscar por Servicio o Descripción",
+    "criteria": {
+      "texto": "Consulta",
+      "campos": [
+        "servicio",
+        "descripcion"
+      ]
+    },
+    "enterAndClear": "OK"
+  }
+]

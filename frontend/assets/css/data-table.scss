@@ -1,0 +1,50 @@
+.data-table thead th {
+  color: rgb(var(--v-theme-on-surface));
+  background-color: rgb(var(--v-theme-secondary));
+}
+
+.data-table tbody tr:nth-child(even) {
+  background-color: rgba(var(--v-theme-darkLight3), 0.45);
+}
+
+.data-table tbody tr:hover {
+  background-color: rgba(var(--v-theme-darkLight5), 0.65);
+}
+
+// Shared by built-in CRUD actions and custom action slots.
+.data-table .table-actions {
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.data-table .table-action-btn.v-btn--variant-flat .v-icon {
+  color: #ffffff !important;
+}
+
+// Include existing page toolbars without requiring per-page classes.
+.table-toolbar-btn,
+.v-container .v-btn:has(.mdi-filter, .mdi-reload) {
+  background-color: #ffffff !important;
+  color: #212121 !important;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+
+  .v-icon {
+    color: #212121 !important;
+  }
+}
+
+.table-create-btn .v-icon,
+.data-table .v-btn--variant-tonal.text-primary .v-icon {
+  color: rgb(var(--v-theme-primary)) !important;
+}
+
+.table-action-btn:focus-visible,
+.table-toolbar-btn:focus-visible,
+.table-create-btn:focus-visible,
+.data-table .v-btn:focus-visible,
+.v-container .v-btn:has(.mdi-filter, .mdi-reload):focus-visible {
+  outline: 2px solid rgb(var(--v-theme-on-surface));
+  outline-offset: 3px;
+}
+

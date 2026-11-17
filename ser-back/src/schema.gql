@@ -1,0 +1,1175 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type InstitucionReferencia {
+  id: String!
+  nombre: String!
+  id_estado: Int!
+}
+
+type Persona {
+  fecha_ingreso: String!
+  id: String!
+  id_anterior: Int
+  nombres: String!
+  primer_apellido: String
+  segundo_apellido: String
+  edad: Int
+  procedencia: String
+  nro_documento: String
+  complemento: String
+  id_expedito: Int
+  expedito: Parametro
+  expedito_personalizado: String
+  foto: String
+  movil: String
+  telefono: String
+  id_genero: Int!
+  genero: Parametro!
+  correo_personal: String
+  id_institucion_referencia: String
+  institucion_referencia: InstitucionReferencia
+  correo_personal_verified_at: DateTime!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Servicio {
+  id: String!
+  servicio: String!
+  descripcion: String!
+  capacidad_simultanea: Int!
+  duracion_sesion_min: Int!
+  id_estado: Int!
+  estado: Estado!
+}
+
+type ServicioPersonal {
+  id: String!
+  id_servicio: String!
+  servicio: Servicio!
+  id_rol: String
+  rol: Rol
+  id_usuario: String!
+  usuario: Usuario!
+  fecha_inicio: String!
+  fecha_fin: String
+  id_estado: Int!
+  vigencia: String!
+}
+
+type Usuario {
+  id: String!
+  nombre_usuario: String!
+  id_persona: String!
+  persona: Persona!
+  correo: String
+  id_secundario: Int!
+  id_estado: Int!
+  usuario_rol: [UsuarioRol!]!
+  servicio_personal: [ServicioPersonal!]!
+}
+
+type UsuarioRol {
+  id: String!
+  id_rol: String!
+  rol: Rol!
+  id_usuario: String!
+  usuario: Usuario!
+  id_estado: Int!
+  id_secundario: Int!
+}
+
+type Rol {
+  id: String!
+  descripcion: String!
+  id_sec: Int!
+  icono: String
+  id_estado: Int!
+  usuario_rol: [UsuarioRol!]!
+  rol_recurso: [RolRecurso!]!
+}
+
+type RolRecurso {
+  id: String!
+  id_rol: String!
+  rol: Rol!
+  id_recurso: String!
+  recurso: Recurso!
+  id_estado: Int!
+}
+
+type Recurso {
+  id: String!
+  title: String!
+  nivel: Int!
+  icon: String!
+  path: String
+  id_estado: Int!
+  estado: Estado!
+  is_menu: Boolean!
+  id_recurso_padre: String
+  recurso_padre: Recurso
+  recurso_rol: [RolRecurso!]!
+}
+
+type Estado {
+  id: Int!
+  id_estado: Int!
+  descripcion: String!
+  valor: String!
+  tipo: String
+}
+
+type Horario {
+  id_horario: Int!
+  id_servicio: String!
+  id_profesional: String
+  profesional: Usuario
+  servicio: Servicio!
+  id_dia: Int!
+  dia: Parametro!
+  hora_inicio: String!
+  hora_fin: String!
+  id_estado: Int!
+  estado: Estado!
+}
+
+type Parametro {
+  id: Int!
+  valor: String!
+  tipo: String!
+  id_estado: Int!
+  persona: [Persona!]!
+  personaExpedito: [Persona!]!
+  dia: [Horario!]!
+}
+
+type PersonaReservable {
+  id: String!
+  nombres: String!
+  primer_apellido: String
+  segundo_apellido: String
+  esPaciente: Boolean!
+}
+
+type PersonasPage {
+  rows: [Persona!]!
+  count: Int!
+}
+
+type UsuarioAccessLookupOutput {
+  persona: Persona!
+  usuario: Usuario
+}
+
+type MenuResourceOutput {
+  id: String!
+  id_recurso_padre: String
+  title: String!
+  icon: String!
+  path: String
+}
+
+type LoginUsuarioOutput {
+  accessToken: String!
+  usuario: Usuario!
+  roles: [Rol!]!
+  recursos: [MenuResourceOutput!]!
+}
+
+type UsuariosPage {
+  rows: [Usuario!]!
+  count: Int!
+}
+
+type RolesPage {
+  rows: [Rol!]!
+  count: Int!
+}
+
+type EstadosPage {
+  rows: [Estado!]!
+  count: Int!
+}
+
+type UsuarioRolesPage {
+  rows: [UsuarioRol!]!
+  count: Int!
+}
+
+type RecursosPage {
+  rows: [Recurso!]!
+  count: Int!
+}
+
+type RolRecursosPage {
+  rows: [RolRecurso!]!
+  count: Int!
+}
+
+type ServiciosPage {
+  rows: [Servicio!]!
+  count: Int!
+}
+
+type HorariosPage {
+  rows: [Horario!]!
+  count: Int!
+}
+
+type Expediente {
+  id_responsable: String
+  id: String!
+  codigo_caso: String!
+  id_persona: String!
+  persona: Persona!
+  id_servicio: String!
+  servicio: Servicio!
+  id_profesional: String!
+  profesional: Usuario!
+  motivo_consulta: String!
+  institucion_referencia: String
+  id_institucion_referencia: String
+  institucion: InstitucionReferencia
+  fecha_apertura: String!
+  estado_caso: EstadoCaso!
+  id_estado_caso: Int
+  estado_actual: Estado
+  responsable: Usuario
+  tipo_cierre: TipoCierre
+  detalle_cierre: String
+  conclusion_diagnostico: String
+  derivaciones: String
+  fecha_cierre: String
+  cerrado_por: String
+  responsable_cierre: Usuario
+}
+
+enum EstadoCaso {
+  ACTIVO
+  CERRADO
+}
+
+enum TipoCierre {
+  ALTA
+  DERIVADO
+  ABANDONO
+}
+
+type Reserva {
+  id: String!
+  id_expediente: String!
+  expediente: Expediente!
+  id_servicio: String!
+  servicio: Servicio!
+  id_profesional: String!
+  profesional: Usuario!
+  fecha: String!
+  hora_inicio: String!
+  hora_fin: String!
+  estado_reserva: EstadoReserva!
+  canal: CanalReserva!
+  monto: String
+  nit_factura: String
+  razon_social_factura: String
+  comprobante_mime_type: String
+  estado_pago: EstadoPago
+  id_transaccion_pasarela: String
+  vence_pago: String
+  marcado_no_asistio_por: Usuario
+}
+
+enum EstadoReserva {
+  PAGADA
+  ATENDIDA
+  RESERVADA
+  CONFIRMADA
+  ASISTIO
+  NO_ASISTIO
+  REAGENDADA
+  CANCELADA
+  PENDIENTE_PAGO
+}
+
+enum CanalReserva {
+  WEB
+  PRESENCIAL
+}
+
+enum EstadoPago {
+  PENDIENTE
+  PAGADO
+}
+
+type Cita {
+  id: String!
+  id_reserva: String!
+  id_expediente: String!
+  id_servicio: String!
+  id_responsable: String!
+  id_practicante: String
+  fecha: String!
+  hora_inicio: String!
+  hora_fin: String!
+  id_estado: Int!
+  motivo: String
+  fecha_creacion: DateTime!
+  responsable: Usuario!
+  practicante: Usuario
+  estado: Estado!
+  reserva: Reserva!
+}
+
+type Pago {
+  id: String!
+  id_reserva: String!
+  monto: String!
+  moneda: String!
+  metodo_pago: String!
+  id_estado: Int!
+  referencia_externa: String
+  id_transaccion_proveedor: String
+  fecha_inicio: DateTime!
+  fecha_confirmacion: DateTime
+  comprobante_url: String
+  estado: Estado!
+  reserva: Reserva!
+}
+
+type Reagendamiento {
+  id: String!
+  id_reserva: String!
+  reserva: Reserva!
+  numero_reagendamiento: Int!
+  motivo: String!
+  solicitado_por: String!
+  solicitante: Usuario!
+  autorizado_por: String
+  autorizador: Usuario
+  resultado: ResultadoReagendamiento!
+  fecha_anterior: String!
+  hora_anterior: String!
+  fecha_nueva: String
+  hora_nueva: String
+}
+
+enum ResultadoReagendamiento {
+  AUTORIZADO
+  RECHAZADO
+}
+
+type BloqueAgenda {
+  id: String!
+  id_servicio: String
+  servicio: Servicio
+  tipo: String!
+  id_estado: Int!
+  fecha_inicio: String!
+  fecha_fin: String!
+  hora_inicio: String
+  hora_fin: String
+  id_profesional: String
+  profesional: Usuario
+  motivo: String!
+  creado_por: String!
+}
+
+type Sesion {
+  id_profesional: String
+  id: String!
+  id_expediente: String!
+  expediente: Expediente!
+  id_reserva: String
+  reserva: Reserva
+  numero_correlativo: Int!
+  fecha_sesion: String!
+  id_tipo_atencion: Int
+  tipo_atencion: Parametro
+  accion_realizada: String!
+  notas_avance: String
+  observaciones: String
+  id_registrado_por: String!
+  nombre_registrado_por: String
+  registrado_por: Usuario!
+}
+
+type Disponibilidad {
+  id: String!
+  id_usuario: String!
+  usuario: Usuario!
+  fecha: String!
+  hora_inicio: String!
+  hora_fin: String!
+  id_estado: Int!
+}
+
+type HorarioDisponible {
+  hora_inicio: String!
+  hora_fin: String!
+  id_profesional: String!
+  es_responsable_por_fallback: Boolean!
+}
+
+type PublicBlockedDate {
+  fecha: String!
+  tipo: String!
+}
+
+type EstadoPagoReservaOutput {
+  estado_pago: EstadoPago
+  estado_reserva: EstadoReserva!
+  tiene_comprobante: Boolean!
+}
+
+type ComprobantePagoOutput {
+  mime_type: String!
+  base64: String!
+}
+
+type ReservaPublicaOutput {
+  expediente: Expediente!
+  reserva: Reserva!
+}
+
+type ServiceWorkloadRowOutput {
+  id_servicio: String!
+  servicio: String!
+  casos_atendidos: Int!
+  sesiones_registradas: Int!
+}
+
+type ServiceWorkloadReportOutput {
+  periodo: String!
+  desde: String!
+  hasta: String!
+  servicios: [ServiceWorkloadRowOutput!]!
+}
+
+type AgendaWeekEventOutput {
+  id: String!
+  tipo_evento: String!
+  fecha: String!
+  hora_inicio: String!
+  hora_fin: String!
+  id_profesional: String
+  profesional: String
+  id_responsable: String
+  responsable: String
+  id_servicio: String
+  servicio: String
+  codigo_caso: String
+  paciente: String
+  estado: String!
+  motivo: String
+}
+
+type AgendaProfessionalOptionOutput {
+  id: String!
+  name: String!
+}
+
+type PacientesAdministracionPage {
+  rows: [Expediente!]!
+  count: Int!
+}
+
+type PacienteGeneralDetail {
+  persona: Persona!
+  expedientes: [Expediente!]!
+  fecha_ingreso: String
+}
+
+type ReporteAtencionesGrupo {
+  clave: String!
+  etiqueta: String!
+  cantidad: Int!
+}
+
+type ReporteAtencionesOutput {
+  desde: String
+  hasta: String
+  por_mes: [ReporteAtencionesGrupo!]!
+  casos: [ReporteAtencionesGrupo!]!
+  total: Int!
+  por_dia: [ReporteAtencionesGrupo!]!
+  por_dia_semana: [ReporteAtencionesGrupo!]!
+  por_servicio: [ReporteAtencionesGrupo!]!
+  por_municipio: [ReporteAtencionesGrupo!]!
+}
+
+type AgendaResponsablesPage {
+  rows: [AgendaWeekEventOutput!]!
+  count: Int!
+}
+
+type InstitucionReferenciasPage {
+  rows: [InstitucionReferencia!]!
+  count: Int!
+}
+
+type Query {
+  health: String!
+  personaPorCarnet(nro_documento: String!): PersonaReservable
+  personas(limit: Int! = 10, pagina: Int! = 1, search: PersonaArgs, order: PersonaOrderArgs): PersonasPage!
+  persona(id: String!): Persona!
+  serviciosGestionPersonal: [Servicio!]!
+  personalServicio(tipo: String!, limit: Int! = 100, pagina: Int! = 1, search: UsuarioArgs): UsuariosPage!
+  usuarios(limit: Int! = 10, pagina: Int! = 1, search: UsuarioArgs): UsuariosPage!
+  usuariosAdministracion(limit: Int! = 10, pagina: Int! = 1, search: UsuarioArgs): UsuariosPage!
+  cuentasAdministracion(limit: Int! = 100, pagina: Int! = 1, search: UsuarioArgs): UsuariosPage!
+  cuentasDadasDeBajaAdministracion(limit: Int! = 100, pagina: Int! = 1, search: UsuarioArgs): UsuariosPage!
+  equipoTrabajoAdministracion(limit: Int! = 100, pagina: Int! = 1, search: UsuarioArgs): UsuariosPage!
+  cuentasInactivasAdministracion(limit: Int! = 10, pagina: Int! = 1, search: UsuarioArgs): UsuariosPage!
+  personaParaAcceso(nro_documento: String!): UsuarioAccessLookupOutput
+  usuario(id: String!): Usuario!
+  roles(limit: Int! = 10, pagina: Int! = 1, search: RolArgs, order: RolOrderArgs): RolesPage!
+  rol(id: String!): Rol!
+  estados(limit: Int!, pagina: Int!, search: EstadoSearchInput, order: EstadoOrderInput): EstadosPage!
+  estado(tipo: String): [Estado!]!
+  usuarioRoles(limit: Int! = 10, pagina: Int! = 1, search: UsuarioRolArgs, order: UsuarioRolOrderArgs): UsuarioRolesPage!
+  usuarioRol(id: String!): UsuarioRol!
+  parametros: [Parametro!]!
+  parametrosByTipo(tipo: String!): [Parametro!]!
+  parametro(id: Int!): Parametro!
+  recursos(limit: Int! = 10, pagina: Int! = 1, search: RecursoArgs, order: RecursoOrderArgs): RecursosPage!
+  recurso(id: String!): Recurso!
+  rolRecursos(limit: Int! = 10, pagina: Int! = 1, search: RolRecursoArgs, order: RolRecursoOrderArgs): RolRecursosPage!
+  rolRecurso(id: String!): RolRecurso!
+  servicios(limit: Int! = 10, pagina: Int! = 1, search: ServicioArgs, order: ServicioOrderArgs): ServiciosPage!
+  servicio(id: String!): Servicio!
+  horarios(limit: Int! = 10, pagina: Int! = 1, search: HorarioArgs, order: HorarioOrderArgs): HorariosPage!
+  horario(id_horario: Int!): Horario!
+  servicioPersonal: [ServicioPersonal!]!
+  misServicios: [ServicioPersonal!]!
+  servicioPersonalById(id: String!): ServicioPersonal!
+  reporteAtenciones(search: ReporteAtencionesArgs): ReporteAtencionesOutput!
+  agendaResponsables(limit: Int!, pagina: Int!, search: AgendaResponsableArgs, order: AgendaResponsableOrderArgs): AgendaResponsablesPage!
+  detallePacienteGeneral(id_persona: String!): PacienteGeneralDetail!
+  expedientes: [Expediente!]!
+  agendaSemanal(desde: String!, hasta: String!, id_profesional: String): [AgendaWeekEventOutput!]!
+  reservasAsistidasExpediente(id_expediente: String!): [Reserva!]!
+  profesionalesFiltroAgenda: [AgendaProfessionalOptionOutput!]!
+  pacientesAdministracion: [Expediente!]!
+  pacientesAdministracionPage(limit: Int! = 10, pagina: Int! = 1, search: PacientesAdministracionArgs): PacientesAdministracionPage!
+  reporteCargaServicios(periodo: String!, fecha: String!): ServiceWorkloadReportOutput!
+  expediente(id: String!): Expediente!
+  expedientesPorPersona(id_persona: String!): [Expediente!]!
+  reservas(desde: String, hasta: String, id_profesional: String): [Reserva!]!
+  pagosPendientesVerificacion: [Reserva!]!
+  horariosDisponibles(id_servicio: String!, fecha: String!, id_persona: String): [HorarioDisponible!]!
+  avisoCierreAgenda(fecha: String!): String
+  fechasBloqueadasReserva(id_servicio: String!, desde: String!, hasta: String!, id_persona: String): [PublicBlockedDate!]!
+  estadoPagoReserva(id_reserva: String!): EstadoPagoReservaOutput!
+  comprobantePagoReserva(id_reserva: String!): ComprobantePagoOutput
+  reagendamientos(id_reserva: String!): [Reagendamiento!]!
+  sesiones(id_expediente: String!): [Sesion!]!
+  bloquesAgenda(desde: String!, hasta: String!): [BloqueAgenda!]!
+  citasAgenda: [Cita!]!
+  pagosReserva(idReserva: String!): [Pago!]!
+  institucionesReferenciaActivas: [InstitucionReferencia!]!
+  institucionesReferencia: [InstitucionReferencia!]!
+  institucionReferencias(limit: Int! = 10, pagina: Int! = 1, search: InstitucionReferenciaArgs, order: InstitucionReferenciaOrderArgs): InstitucionReferenciasPage!
+  miDisponibilidad(desde: String, hasta: String): [Disponibilidad!]!
+}
+
+input PersonaArgs {
+  busqueda: String
+  nombres: String
+  primer_apellido: String
+  segundo_apellido: String
+  nro_documento: String
+}
+
+input PersonaOrderArgs {
+  columna: String!
+  order: String!
+}
+
+input UsuarioArgs {
+  nombres: String
+  primer_apellido: String
+  nro_documento: String
+  correo: String
+  id_rol: String
+  id_servicio: String
+  id_estado: Int
+  busqueda: String
+  nombre_usuario: String
+}
+
+input RolArgs {
+  descripcion: String
+  icono: String
+  id_sec: Int
+  id_estado: Int
+}
+
+input RolOrderArgs {
+  columna: String!
+  order: String!
+}
+
+input EstadoSearchInput {
+  valor: String
+  tipo: String
+  id_estado: Int
+}
+
+input EstadoOrderInput {
+  columna: String!
+  order: String!
+}
+
+input UsuarioRolArgs {
+  busqueda: String
+  id_usuario: String
+  id_rol: String
+  id_estado: Int
+}
+
+input UsuarioRolOrderArgs {
+  columna: String!
+  order: String!
+}
+
+input RecursoArgs {
+  title: String
+  path: String
+  nivel: Int
+  icon: String
+  id_estado: Int
+  is_menu: Boolean
+  id_recurso_padre: String
+}
+
+input RecursoOrderArgs {
+  columna: String!
+  order: String!
+}
+
+input RolRecursoArgs {
+  id_rol: String
+  id_recurso: String
+  id_estado: Int
+  descripcionRol: String
+  nombreRecurso: String
+}
+
+input RolRecursoOrderArgs {
+  columna: String!
+  order: String!
+}
+
+input ServicioArgs {
+  servicio: String
+  descripcion: String
+  capacidad_simultanea: Int
+  duracion_sesion_min: Int
+  id_estado: Int
+}
+
+input ServicioOrderArgs {
+  columna: String!
+  order: String!
+}
+
+input HorarioArgs {
+  id_servicio: String
+  id_profesional: String
+  id_dia: Int
+  servicio: String
+  dia: String
+  hora_inicio: String
+  hora_fin: String
+  id_estado: Int
+}
+
+input HorarioOrderArgs {
+  columna: String!
+  order: String!
+}
+
+input ReporteAtencionesArgs {
+  periodo: String
+  fecha_referencia: String
+  fecha_inicial: String
+  fecha_final: String
+  id_servicio: String
+  municipio: String
+}
+
+input AgendaResponsableArgs {
+  id_responsable: String
+  id_servicio: String
+  fecha_inicial: String
+  fecha_final: String
+}
+
+input AgendaResponsableOrderArgs {
+  columna: String!
+  order: String!
+}
+
+input PacientesAdministracionArgs {
+  nombres: String
+  primer_apellido: String
+  nro_documento: String
+  id_profesional: String
+  id_servicio: String
+  id_estado_caso: Int
+}
+
+input InstitucionReferenciaArgs {
+  nombre: String
+  id_estado: Int
+}
+
+input InstitucionReferenciaOrderArgs {
+  columna: String!
+  order: String!
+}
+
+type Mutation {
+  createPaciente(input: CreatePacienteInput!): Persona!
+  admisionInicial(input: CreatePersonaInput!): Persona!
+  createPersona(createPersonaInput: CreatePersonaInput!): Persona!
+  updatePersona(updatePersonaInput: UpdatePersonaInput!): Persona!
+  removePersona(id: String!): Persona!
+  loginUsuario(nombre_usuario: String!, contrasena: String!): LoginUsuarioOutput!
+  createUsuario(createUsuarioInput: CreateUsuarioInput!): Usuario!
+  createUsuarioCompleto(input: CreateUsuarioCompletoInput!): Usuario!
+  crearIntegranteEquipo(input: CreateUsuarioCompletoInput!): Usuario!
+  updateUsuario(updateUsuarioInput: UpdateUsuarioInput!): Usuario!
+  actualizarMiPerfil(correo: String, movil: String): Usuario!
+  cambiarMiContrasena(actual: String!, nueva: String!): Boolean!
+  actualizarIntegranteEquipo(input: UpdateUsuarioInput!): Usuario!
+  removeUsuario(id: String!): Usuario!
+  darDeBajaIntegranteEquipo(id: String!): Usuario!
+  cambiarEstadoCuenta(id: String!, active: Boolean!): Usuario!
+  otorgarAccesoUsuario(input: GrantUsuarioAccessInput!): Usuario!
+  reactivarCuentaInactiva(input: ReactivateInactiveAccountInput!): Usuario!
+  reactivarCuentaDadaDeBaja(input: ReactivateInactiveAccountInput!): Usuario!
+  resetUsuarioContrasena(id: String!, nro_documento: String): Boolean!
+  createRol(createRolInput: CreateRolInput!): Rol!
+  updateRol(updateRolInput: UpdateRolInput!): Rol!
+  removeRol(id: String!): Rol!
+  createEstado(createEstadoInput: CreateEstadoInput!): Estado!
+  updateEstado(updateEstadoInput: UpdateEstadoInput!): Estado!
+  removeEstado(id: Int!): Estado!
+  createUsuarioRol(createUsuarioRolInput: CreateUsuarioRolInput!): UsuarioRol!
+  updateUsuarioRol(updateUsuarioRolInput: UpdateUsuarioRolInput!): UsuarioRol!
+  removeUsuarioRol(id: String!): UsuarioRol!
+  createParametro(createParametroInput: CreateParametroInput!): Parametro!
+  updateParametro(updateParametroInput: UpdateParametroInput!): Parametro!
+  removeParametro(id: Int!): Parametro!
+  createRecurso(createRecursoInput: CreateRecursoInput!): Recurso!
+  updateRecurso(updateRecursoInput: UpdateRecursoInput!): Recurso!
+  removeRecurso(id: String!): Recurso!
+  createRolRecurso(createRolRecursoInput: CreateRolRecursoInput!): RolRecurso!
+  updateRolRecurso(updateRolRecursoInput: UpdateRolRecursoInput!): RolRecurso!
+  removeRolRecurso(id: String!): RolRecurso!
+  createServicio(createServicioInput: CreateServicioInput!): Servicio!
+  updateServicio(updateServicioInput: UpdateServicioInput!): Servicio!
+  removeServicio(id: String!): Servicio!
+  createHorario(createHorarioInput: CreateHorarioInput!): Horario!
+  updateHorario(updateHorarioInput: UpdateHorarioInput!): Horario!
+  removeHorario(id_horario: Int!): Horario!
+  createServicioPersonal(createServicioPersonalInput: CreateServicioPersonalInput!): ServicioPersonal!
+  updateServicioPersonal(updateServicioPersonalInput: UpdateServicioPersonalInput!): ServicioPersonal!
+  removeServicioPersonal(id: String!): ServicioPersonal!
+  setPersonalActive(id_usuario: String!, active: Boolean!): Boolean!
+  guardarAsignacionPersonal(input: AssignStaffInput!): Boolean!
+  finalizarServicioPersonal(id: String!): ServicioPersonal!
+  agendarCitaPacienteGeneral(input: CreateReservaPublicaInput!): ReservaPublicaOutput!
+  createExpediente(input: CreateExpedienteInput!): Expediente!
+  cerrarExpediente(input: CerrarExpedienteInput!): Expediente!
+  asignarExpedientePracticante(input: ReasignarExpedienteInput!): Expediente!
+  removeExpediente(id: String!): Expediente!
+  removeExpedientePermanente(id: String!): Expediente!
+  createReserva(input: CreateReservaInput!): Reserva!
+  createReservaPublica(input: CreateReservaPublicaInput!): ReservaPublicaOutput!
+  cambiarEstadoReserva(input: CambiarEstadoReservaInput!): Reserva!
+  solicitarVerificacionPago(input: SolicitarVerificacionPagoInput!): Reserva!
+  verificarPagoReserva(id: String!): Reserva!
+  createReagendamiento(input: CreateReagendamientoInput!): Reagendamiento!
+  createSesion(input: CreateSesionInput!): Sesion!
+  createBloqueAgenda(input: CreateBloqueAgendaInput!): BloqueAgenda!
+  removeBloqueAgenda(id: String!): BloqueAgenda!
+  iniciarPago(idReserva: String!): Pago!
+  confirmarPagoSimulado(idPago: String!): Pago!
+  asignarPracticante(idCita: String!, idPracticante: String!): Cita!
+  marcarAsistencia(idCita: String!, asistio: Boolean!): Cita!
+  reagendarCita(idCita: String!, datos: ReagendarCitaInput!): Cita!
+  cancelarCita(idCita: String!, motivo: String!): Cita!
+  createInstitucionReferencia(input: CreateInstitucionReferenciaInput, createInstitucionReferenciaInput: CreateInstitucionReferenciaInput): InstitucionReferencia!
+  updateInstitucionReferencia(input: UpdateInstitucionReferenciaInput, updateInstitucionReferenciaInput: UpdateInstitucionReferenciaInput): InstitucionReferencia!
+  removeInstitucionReferencia(id: String!): InstitucionReferencia!
+  guardarDisponibilidad(input: CreateDisponibilidadInput!): Disponibilidad!
+  desactivarDisponibilidad(id: String!): Disponibilidad!
+}
+
+input CreatePacienteInput {
+  nombres: String!
+  primer_apellido: String
+  segundo_apellido: String
+  procedencia: String
+  nro_documento: String
+  complemento: String
+  id_expedito: Int
+  expedito_personalizado: String
+  foto: String
+  movil: String
+  telefono: String
+  id_genero: Int!
+  id_anterior: Int
+  id_institucion_referencia: String
+  edad: Int!
+  correo_personal: String!
+}
+
+input CreatePersonaInput {
+  nombres: String!
+  primer_apellido: String
+  segundo_apellido: String
+  edad: Int
+  procedencia: String
+  nro_documento: String
+  complemento: String
+  id_expedito: Int
+  expedito_personalizado: String
+  foto: String
+  movil: String
+  telefono: String
+  id_genero: Int!
+  correo_personal: String
+  id_anterior: Int
+  id_institucion_referencia: String
+}
+
+input UpdatePersonaInput {
+  nombres: String
+  primer_apellido: String
+  segundo_apellido: String
+  edad: Int
+  procedencia: String
+  nro_documento: String
+  complemento: String
+  id_expedito: Int
+  expedito_personalizado: String
+  foto: String
+  movil: String
+  telefono: String
+  id_genero: Int
+  correo_personal: String
+  id_anterior: Int
+  id_institucion_referencia: String
+  id: String!
+}
+
+input CreateUsuarioInput {
+  id_persona: String!
+  nombre_usuario: String
+  correo: String
+  id_estado: Int
+}
+
+input CreateUsuarioCompletoInput {
+  persona: CreatePersonaInput!
+  nombre_usuario: String
+  correo: String!
+  id_rol: String!
+  id_servicio: String
+}
+
+input UpdateUsuarioInput {
+  id_rol: String
+  id_servicio: String
+  id: String!
+  id_persona: String
+  nombre_usuario: String
+  correo: String
+  id_estado: Int
+  persona: UpdatePersonaInput
+  correo_personal: String
+  movil: String
+}
+
+input GrantUsuarioAccessInput {
+  id_persona: String!
+  nombre_usuario: String
+  id_servicio: String
+  correo: String
+  id_rol: String!
+}
+
+input ReactivateInactiveAccountInput {
+  id_usuario: String!
+  id_rol: String
+  id_servicio: String
+}
+
+input CreateRolInput {
+  descripcion: String!
+  icono: String!
+  id_sec: Int!
+  id_estado: Int
+}
+
+input UpdateRolInput {
+  descripcion: String
+  icono: String
+  id_sec: Int
+  id_estado: Int
+  id: String!
+}
+
+input CreateEstadoInput {
+  id_estado: Int
+  valor: String
+  descripcion: String
+  tipo: String
+}
+
+input UpdateEstadoInput {
+  id_estado: Int!
+  valor: String
+  descripcion: String
+  tipo: String
+  id: Int!
+}
+
+input CreateUsuarioRolInput {
+  id_rol: String!
+  id_usuario: String!
+  id_estado: Int
+}
+
+input UpdateUsuarioRolInput {
+  id_rol: String
+  id_usuario: String
+  id_estado: Int
+  id: String!
+}
+
+input CreateParametroInput {
+  valor: String!
+  tipo: String!
+  id_estado: Int
+}
+
+input UpdateParametroInput {
+  valor: String
+  tipo: String
+  id_estado: Int
+  id: Int!
+}
+
+input CreateRecursoInput {
+  title: String!
+  nivel: Int
+  icon: String!
+  path: String
+  id_recurso_padre: String
+  id_estado: Int
+  is_menu: Boolean
+}
+
+input UpdateRecursoInput {
+  title: String
+  nivel: Int
+  icon: String
+  path: String
+  id_recurso_padre: String
+  id_estado: Int
+  is_menu: Boolean
+  id: String!
+}
+
+input CreateRolRecursoInput {
+  id_rol: String!
+  id_recurso: String!
+  id_estado: Int
+}
+
+input UpdateRolRecursoInput {
+  id_rol: String
+  id_recurso: String
+  id_estado: Int
+  id: String!
+}
+
+input CreateServicioInput {
+  servicio: String!
+  descripcion: String!
+  capacidad_simultanea: Int!
+  duracion_sesion_min: Int!
+  id_estado: Int
+}
+
+input UpdateServicioInput {
+  servicio: String
+  descripcion: String
+  capacidad_simultanea: Int
+  duracion_sesion_min: Int
+  id_estado: Int
+  id: String!
+}
+
+input CreateHorarioInput {
+  id_servicio: String!
+  id_dia: Int!
+  id_profesional: String
+  hora_inicio: String!
+  hora_fin: String!
+  id_estado: Int
+}
+
+input UpdateHorarioInput {
+  id_servicio: String
+  id_dia: Int
+  id_profesional: String
+  hora_inicio: String
+  hora_fin: String
+  id_estado: Int
+  id_horario: Int!
+}
+
+input CreateServicioPersonalInput {
+  id_servicio: String!
+  id_usuario: String!
+  id_rol: String!
+  fecha_inicio: String
+  fecha_fin: String
+  id_estado: Int
+}
+
+input UpdateServicioPersonalInput {
+  id_servicio: String
+  id_usuario: String
+  id_rol: String
+  fecha_inicio: String
+  fecha_fin: String
+  id_estado: Int
+  id: String!
+}
+
+input AssignStaffInput {
+  id_usuario: String!
+  id_rol: String!
+  id_servicio: String
+  id_asignacion: String
+  fecha_inicio: String!
+  fecha_fin: String
+}
+
+input CreateReservaPublicaInput {
+  id_persona: String!
+  id_servicio: String!
+  id_profesional: String!
+  fecha: String!
+  hora_inicio: String!
+  motivo_consulta: String!
+}
+
+input CreateExpedienteInput {
+  id_persona: String!
+  id_servicio: String!
+  id_profesional: String!
+  motivo_consulta: String!
+  institucion_referencia: String
+  id_institucion_referencia: String
+}
+
+input CerrarExpedienteInput {
+  id: String!
+  id_estado_caso: Int!
+  conclusion_diagnostico: String!
+  derivaciones: String
+}
+
+input ReasignarExpedienteInput {
+  id_expediente: String!
+  id_profesional: String!
+}
+
+input CreateReservaInput {
+  id_expediente: String!
+  id_servicio: String!
+  id_profesional: String!
+  fecha: String!
+  hora_inicio: String!
+  canal: CanalReserva
+}
+
+input CambiarEstadoReservaInput {
+  id: String!
+  estado_reserva: EstadoReserva!
+}
+
+input SolicitarVerificacionPagoInput {
+  id_reserva: String!
+  nit_factura: String!
+  razon_social_factura: String!
+  comprobante_base64: String
+}
+
+input CreateReagendamientoInput {
+  id_reserva: String!
+  motivo: String!
+  solicitado_por: String!
+  autorizado_por: String
+  resultado: ResultadoReagendamiento!
+  fecha_anterior: String!
+  hora_anterior: String!
+  fecha_nueva: String
+  hora_nueva: String
+}
+
+input CreateSesionInput {
+  id_expediente: String!
+  id_reserva: String
+  fecha_sesion: String!
+  id_tipo_atencion: Int!
+  accion_realizada: String!
+  observaciones: String
+  id_registrado_por: String
+}
+
+input CreateBloqueAgendaInput {
+  fecha_inicio: String!
+  fecha_fin: String!
+  hora_inicio: String
+  hora_fin: String
+  id_profesional: String
+  id_servicio: String
+  motivo: String!
+  creado_por: String!
+}
+
+input ReagendarCitaInput {
+  fecha: String!
+  hora_inicio: String!
+  motivo: String!
+}
+
+input CreateInstitucionReferenciaInput {
+  nombre: String!
+  id_estado: Int
+}
+
+input UpdateInstitucionReferenciaInput {
+  nombre: String
+  id_estado: Int
+  id: String!
+}
+
+input CreateDisponibilidadInput {
+  fecha: String!
+  hora_inicio: String!
+  hora_fin: String!
+}

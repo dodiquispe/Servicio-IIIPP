@@ -1,0 +1,19 @@
+.admin-dialog__card {
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.admin-dialog__card > .v-card-title {
+  padding: 18px 24px;
+  color: rgb(var(--v-theme-on-primary));
+  background-color: rgb(var(--v-theme-primary));
+  font-weight: 600;
+}
+
+.admin-dialog__card > .v-card-text {
+  padding: 24px;
+}
+
+.admin-dialog__card > .v-card-actions {
+  padding: 12px 24px 20px;
+}

@@ -1,0 +1,129 @@
+[
+  {
+    "services": "dos campos sin duplicados; búsqueda y recarga OK",
+    "search": {
+      "servicio": "Psicologia",
+      "descripcion": "Consulta"
+    }
+  },
+  {
+    "mapping": [
+      {
+        "type": "text",
+        "controls": 1,
+        "input": "text",
+        "textarea": false,
+        "select": false,
+        "combo": false,
+        "hidden": false
+      },
+      {
+        "type": "number",
+        "controls": 1,
+        "input": "number",
+        "textarea": false,
+        "select": false,
+        "combo": false,
+        "hidden": false
+      },
+      {
+        "type": "date",
+        "controls": 1,
+        "input": "date",
+        "textarea": false,
+        "select": false,
+        "combo": false,
+        "hidden": false
+      },
+      {
+        "type": "time",
+        "controls": 1,
+        "input": "time",
+        "textarea": false,
+        "select": false,
+        "combo": false,
+        "hidden": false
+      },
+      {
+        "type": "textarea",
+        "controls": 1,
+        "textarea": true,
+        "select": false,
+        "combo": false,
+        "hidden": false
+      },
+      {
+        "type": "boolean",
+        "controls": 1,
+        "input": "checkbox",
+        "textarea": false,
+        "select": false,
+        "combo": false,
+        "hidden": false
+      },
+      {
+        "type": "select",
+        "controls": 1,
+        "input": "hidden",
+        "textarea": false,
+        "select": true,
+        "combo": false,
+        "hidden": false
+      },
+      {
+        "type": "icon",
+        "controls": 1,
+        "input": "hidden",
+        "textarea": false,
+        "select": false,
+        "combo": true,
+        "hidden": false
+      },
+      {
+        "type": "entidad",
+        "controls": 1,
+        "input": "text",
+        "textarea": false,
+        "select": true,
+        "combo": false,
+        "hidden": false
+      },
+      {
+        "type": "estado",
+        "controls": 1,
+        "input": "text",
+        "textarea": false,
+        "select": true,
+        "combo": false,
+        "hidden": false
+      },
+      {
+        "type": "parametro",
+        "controls": 1,
+        "input": "hidden",
+        "textarea": false,
+        "select": true,
+        "combo": false,
+        "hidden": false
+      },
+      {
+        "type": "hidden",
+        "controls": 0,
+        "textarea": false,
+        "select": false,
+        "combo": false,
+        "hidden": true
+      },
+      {
+        "type": "future-type",
+        "controls": 1,
+        "input": "text",
+        "textarea": false,
+        "select": false,
+        "combo": false,
+        "hidden": false
+      }
+    ],
+    "numberAndSelectionReset": "OK"
+  }
+]
