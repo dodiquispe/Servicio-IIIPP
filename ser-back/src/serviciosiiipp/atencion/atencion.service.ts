@@ -6,8 +6,6 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-  OnApplicationShutdown,
-  OnModuleInit,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
@@ -116,8 +114,7 @@ export interface AgendaProfessionalOption {
 }
 
 @Injectable()
-export class AtencionService implements OnModuleInit, OnApplicationShutdown {
-  private expirationTimer: ReturnType<typeof setInterval> | undefined;
+export class AtencionService {
 
   constructor(
     @Inject(forwardRef(() => CitasService)) private readonly citasService: Pick<CitasService, 'asignarPracticante' | 'marcarAsistencia' | 'reagendarCita' | 'obtenerResponsable'>,
@@ -137,12 +134,8 @@ export class AtencionService implements OnModuleInit, OnApplicationShutdown {
     private readonly usuarioRepository: Repository<Usuario>,
     @InjectRepository(Servicio, 'services')
     private readonly servicioRepository: Repository<Servicio>,
-    @InjectRepository(Horario, 'services')
-    private readonly horarioRepository: Repository<Horario>,
     @InjectRepository(ServicioPersonal, 'services')
     private readonly asignacionRepository: Repository<ServicioPersonal>,
-    @InjectRepository(Disponibilidad, 'services')
-    private readonly disponibilidadRepository: Repository<Disponibilidad>,
     @InjectRepository(Parametro, 'services')
     private readonly parametroRepository: Repository<Parametro>,
     @InjectRepository(Estado, 'services')
@@ -150,19 +143,6 @@ export class AtencionService implements OnModuleInit, OnApplicationShutdown {
     @InjectDataSource('services')
     private readonly dataSource: DataSource,
   ) {}
-
-  onModuleInit(): void {
-    this.expirationTimer = setInterval(() => {
-      void this.expirePendingReservations().catch((error: unknown) => {
-        console.error('No se pudieron vencer las reservas pendientes', error);
-      });
-    }, 30_000);
-    this.expirationTimer.unref?.();
-  }
-
-  onApplicationShutdown(): void {
-    if (this.expirationTimer) clearInterval(this.expirationTimer);
-  }
 
   async findExpedientes(
     actorId?: string,
@@ -627,7 +607,8 @@ export class AtencionService implements OnModuleInit, OnApplicationShutdown {
       ]);
       await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`profesional-${input.id_profesional}-${input.fecha}`]);
       const slot = (
-        await this.disponibilidad(
+        await this.disponibilidadConManager(
+          manager,
           input.id_servicio,
           input.fecha,
           undefined,
@@ -847,6 +828,7 @@ export class AtencionService implements OnModuleInit, OnApplicationShutdown {
   }
 
   async findPagosPendientesVerificacion(): Promise<Reserva[]> {
+    await this.expirePendingReservations();
     return this.reservaRepository.find({
       select: {
         id: true,
@@ -863,7 +845,17 @@ export class AtencionService implements OnModuleInit, OnApplicationShutdown {
     });
   }
 
-  async disponibilidad(
+  disponibilidad(
+    idServicio: string,
+    fecha: string,
+    excludeReservationId?: string,
+    idPersona?: string,
+  ) {
+    return this.disponibilidadConManager(this.dataSource.manager, idServicio, fecha, excludeReservationId, idPersona);
+  }
+
+  async disponibilidadConManager(
+    manager: EntityManager,
     idServicio: string,
     fecha: string,
     excludeReservationId?: string,
@@ -873,11 +865,11 @@ export class AtencionService implements OnModuleInit, OnApplicationShutdown {
     if (fecha < boliviaDate(new Date())) {
       throw new BadRequestException('No se puede reservar en una fecha pasada');
     }
-    const servicio = await this.requireActiveService(idServicio);
-    await this.expirePendingReservations();
+    const servicio = await this.requireActiveService(idServicio, manager.getRepository(Servicio));
     const day = normalize(nombresDias[new Date(`${fecha}T00:00:00Z`).getUTCDay()]);
-    const schedules = await this.horarioRepository.find({
+    const schedules = await manager.getRepository(Horario).find({
       where: { id_servicio: idServicio, id_estado: 1 },
+      relations: { dia: true },
     });
     const applicableSchedules: Horario[] = [];
     for (const schedule of schedules) {
@@ -885,7 +877,7 @@ export class AtencionService implements OnModuleInit, OnApplicationShutdown {
       if (normalize(parameter.valor) === day) applicableSchedules.push(schedule);
     }
 
-    let assignments = await this.asignacionRepository
+    let assignments = await manager.getRepository(ServicioPersonal)
       .createQueryBuilder('assignment')
       .innerJoinAndSelect('assignment.usuario', 'usuario')
       .leftJoinAndSelect('assignment.rol', 'role')
@@ -896,7 +888,7 @@ export class AtencionService implements OnModuleInit, OnApplicationShutdown {
         fecha,
       })
       .getMany();
-    const availabilityRows = await this.disponibilidadRepository.find({
+    const availabilityRows = await manager.getRepository(Disponibilidad).find({
       where: { fecha, id_estado: 1 },
     });
     const responsibleAssignments = assignments.filter((assignment) =>
@@ -904,7 +896,7 @@ export class AtencionService implements OnModuleInit, OnApplicationShutdown {
     );
     let fallbackToResponsible = false;
     if (idPersona) {
-      const activeCase = await this.expedienteRepository
+      const activeCase = await manager.getRepository(Expediente)
         .createQueryBuilder('expediente')
         .where('expediente.id_persona = :idPersona', { idPersona })
         .andWhere('expediente.id_servicio = :idServicio', { idServicio })
@@ -941,10 +933,10 @@ export class AtencionService implements OnModuleInit, OnApplicationShutdown {
     assignments = assignments.filter(
       (assignment) => assignment.id_estado === 1 && assignment.usuario.id_estado === 1,
     );
-    const reservations = await this.reservaRepository.find({ where: { fecha } });
-    const citas = await this.dataSource.getRepository(Cita).createQueryBuilder('c').innerJoinAndSelect('c.estado', 'e')
+    const reservations = await manager.getRepository(Reserva).find({ where: { fecha } });
+    const citas = await manager.getRepository(Cita).createQueryBuilder('c').innerJoinAndSelect('c.estado', 'e')
       .where('c.fecha = :fecha', { fecha }).andWhere('e.descripcion IN (:...states)', { states: ['AGENDADA', 'EN_ATENCION', 'REAGENDADA'] }).getMany();
-    const blocks = await this.bloqueRepository
+    const blocks = await manager.getRepository(BloqueAgenda)
       .createQueryBuilder('block')
       .where('block.fecha_inicio <= :fecha AND block.fecha_fin >= :fecha', {
         fecha,
@@ -1101,7 +1093,7 @@ export class AtencionService implements OnModuleInit, OnApplicationShutdown {
       ]);
       await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`profesional-${input.id_profesional}-${input.fecha}`]);
       const slot = (
-        await this.disponibilidad(input.id_servicio, input.fecha)
+        await this.disponibilidadConManager(manager, input.id_servicio, input.fecha)
       ).find(
         (candidate) =>
           candidate.hora_inicio === normalizeTime(input.hora_inicio) &&
@@ -1870,8 +1862,8 @@ export class AtencionService implements OnModuleInit, OnApplicationShutdown {
     return user;
   }
 
-  private async requireActiveService(id: string): Promise<Servicio> {
-    const service = await this.servicioRepository.findOneBy({
+  private async requireActiveService(id: string, repository = this.servicioRepository): Promise<Servicio> {
+    const service = await repository.findOneBy({
       id,
       id_estado: 1,
     });

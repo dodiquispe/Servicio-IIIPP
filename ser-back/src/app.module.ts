@@ -1,5 +1,3 @@
-import { AgendaCitas1732000000000 } from './database/migrations/1732000000000-agenda-citas.js';
-import { AdmisionPagosCitas1731900000000 } from './database/migrations/1731900000000-admision-pagos-citas.js';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
@@ -11,7 +9,9 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { join } from 'path';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import type { DataSourceOptions } from 'typeorm';
+import { databaseOptions, production } from './database/database-options.js';
+import { migrations } from './database/migrations.js';
+import { HealthController } from './health.controller.js';
 import type { Request } from 'express';
 import { AppResolver } from './app.resolver.js';
 import { PersonaModule } from './seguridad/persona/persona.module.js';
@@ -30,10 +30,6 @@ import { InstitucionReferenciaModule } from './serviciosiiipp/institucion-refere
 import { DisponibilidadModule } from './serviciosiiipp/disponibilidad/disponibilidad.module.js';
 import { GraphqlAuthGuard } from './seguridad/auth/graphql-auth.guard.js';
 import { GraphqlRolesGuard } from './seguridad/auth/graphql-roles.guard.js';
-import { AgendaSeguimiento1731500000000 } from './database/migrations/1731500000000-agenda-seguimiento.js';
-import { SesionReservaOpcional1731600000000 } from './database/migrations/1731600000000-sesion-reserva-opcional.js';
-import { ServicioNombreActivo1731700000000 } from './database/migrations/1731700000000-servicio-nombre-activo.js';
-import { CatalogosAuditoria1731800000000 } from './database/migrations/1731800000000-catalogos-auditoria.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -47,7 +43,7 @@ function requiredEnv(name: string): string {
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: production }),
     TypeOrmModule.forRootAsync({
       name: 'services',
       useFactory: () => {
@@ -55,60 +51,43 @@ function requiredEnv(name: string): string {
         if (Buffer.byteLength(jwtSecret) < 32) {
           throw new Error('JWT_SECRET debe contener al menos 32 bytes');
         }
-        return {
-          type: 'postgres' as const,
-          host: requiredEnv('DB_HOST'),
-          port: Number(process.env.DB_PORT ?? 5432),
-          username: requiredEnv('DB_USERNAME'),
-          password: requiredEnv('DB_PASSWORD'),
-          database: requiredEnv('DB_NAME'),
-          autoLoadEntities: true,
-          synchronize: process.env.NODE_ENV !== 'production',
-        };
+        return { ...databaseOptions(), autoLoadEntities: true };
       },
       dataSourceFactory: async (options) => {
-        if (!options) {
-          throw new Error('TypeORM no proporcionó opciones para la conexión');
-        }
-
-        const postgresOptions: Extract<DataSourceOptions, { type: 'postgres' }> = {
-          type: 'postgres',
-          host: requiredEnv('DB_HOST'),
-          port: Number(process.env.DB_PORT ?? 5432),
-          username: requiredEnv('DB_USERNAME'),
-          password: requiredEnv('DB_PASSWORD'),
-          database: requiredEnv('DB_NAME'),
-          entities: options.entities,
-          migrations: [AgendaSeguimiento1731500000000, SesionReservaOpcional1731600000000, ServicioNombreActivo1731700000000, CatalogosAuditoria1731800000000, AdmisionPagosCitas1731900000000, AgendaCitas1732000000000],
-          migrationsTableName: 'app_migrations',
-          synchronize: false,
-        };
-        const dataSource = new DataSource(postgresOptions);
+        if (!options) throw new Error('TypeORM no proporcionó opciones de conexión');
+        const dataSource = new DataSource({ ...databaseOptions(), entities: options.entities, migrations });
         await dataSource.initialize();
-        await dataSource.query('CREATE SCHEMA IF NOT EXISTS "seguridad"');
-        await dataSource.query('CREATE SCHEMA IF NOT EXISTS "serviciosiiipp"');
-        await dataSource.query(
-          'ALTER TABLE IF EXISTS "serviciosiiipp"."institucion_referencia" DROP CONSTRAINT IF EXISTS "UQ_b3e4d1663a3c01966afa13e4ffd"',
-        );
-
-        if (options.synchronize) {
-          await dataSource.synchronize();
+        if (!production && !process.env.DATABASE_URL && process.env.DB_SYNCHRONIZE !== 'false') {
+          try {
+            const [schema] = await dataSource.query(
+              "SELECT to_regclass('seguridad.persona') IS NOT NULL AS existing",
+            );
+            if (schema.existing) {
+              await dataSource.query(
+                'ALTER TABLE IF EXISTS serviciosiiipp.institucion_referencia DROP CONSTRAINT IF EXISTS "UQ_b3e4d1663a3c01966afa13e4ffd"',
+              );
+              await dataSource.synchronize();
+            }
+            await dataSource.runMigrations();
+          } catch (error) {
+            await dataSource.destroy();
+            throw error;
+          }
         }
-        await dataSource.runMigrations();
-
         return dataSource;
       },
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      autoSchemaFile: production ? true : join(process.cwd(), 'src/schema.gql'),
       includeStacktraceInErrorResponses: false,
       formatError: (error) => ({
         message: error.extensions?.code === 'INTERNAL_SERVER_ERROR' ? 'No se pudo completar la operación' : error.message,
         ...(error.path ? { path: error.path } : {}),
         extensions: { code: error.extensions?.code ?? 'INTERNAL_SERVER_ERROR' },
       }),
-      playground: true,
+      graphiql: !production || process.env.GRAPHQL_DEV_TOOLS === 'true',
+      introspection: !production || process.env.GRAPHQL_DEV_TOOLS === 'true',
       context: ({ req }: { req: Request }) => ({ req }),
     }),
     PersonaModule,
@@ -126,7 +105,7 @@ function requiredEnv(name: string): string {
     InstitucionReferenciaModule,
     DisponibilidadModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [
     AppService,
     AppResolver,

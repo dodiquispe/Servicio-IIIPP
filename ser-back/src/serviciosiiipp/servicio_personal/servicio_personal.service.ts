@@ -40,7 +40,7 @@ export class ServicioPersonalService {
       const values = {
         ...input,
         fecha_inicio:
-          input.fecha_inicio ?? new Date().toISOString().slice(0, 10),
+          input.fecha_inicio ?? new Intl.DateTimeFormat('en-CA', { timeZone: 'America/La_Paz' }).format(new Date()),
         fecha_fin: input.fecha_fin ?? null,
         id_estado: input.id_estado ?? 1,
       };

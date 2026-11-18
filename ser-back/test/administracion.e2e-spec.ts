@@ -73,7 +73,12 @@ describe('Administración: permisos, credenciales, catálogos y trazabilidad', (
     const salt = randomUUID(); const password = adminPerson.nro_documento + 'LP';
     admin = await manager.getRepository(Usuario).save({ id: randomUUID(), id_persona: adminPerson.id, nombre_usuario: `test.admin${tag}`, contrasena: `${salt}:${scryptSync(password, salt, 64).toString('hex')}`, id_estado: 1, _created_at: new Date() });
     await manager.getRepository(UsuarioRol).save({ id: randomUUID(), id_usuario: admin.id, id_rol: adminRole.id, id_estado: 1, _created_at: new Date() });
-    const bound = { manager, transaction: <T>(fn: (manager: typeof runner.manager) => Promise<T>) => manager.transaction(fn), query: (sql: string, parameters?: unknown[]) => runner.query(sql, parameters) } as unknown as DataSource;
+    const bound = {
+      manager,
+      getRepository: manager.getRepository.bind(manager),
+      transaction: <T>(fn: (manager: typeof runner.manager) => Promise<T>) => manager.transaction(fn),
+      query: (sql: string, parameters?: unknown[]) => runner.query(sql, parameters),
+    } as unknown as DataSource;
     users = new UsuarioService(manager.getRepository(Usuario), manager.getRepository(Persona), manager.getRepository(UsuarioRol), manager.getRepository(RolRecurso), manager.getRepository(SysToken), manager.getRepository(LoginActivity), bound);
     adminToken = (await users.login(admin.nombre_usuario, password)).accessToken;
     const institutions = new InstitucionReferenciaService(manager.getRepository(InstitucionReferencia));

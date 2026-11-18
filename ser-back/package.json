@@ -13,13 +13,18 @@
     "start": "node --env-file=.env ./node_modules/@nestjs/cli/bin/nest.js start",
     "start:dev": "node --env-file=.env ./node_modules/@nestjs/cli/bin/nest.js start --watch",
     "start:debug": "node --env-file=.env ./node_modules/@nestjs/cli/bin/nest.js start --debug --watch",
-    "start:prod": "node --env-file=.env dist/main.js",
+    "start:prod": "node dist/main.js",
     "lint": "oxlint --type-aware src/ test/",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
-    "test:e2e": "vitest run --config ./vitest.config.e2e.ts"
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+    "migration:generate": "npm run build && node dist/database/migration-command.js generate",
+    "migration:run": "npm run build && node dist/database/migration-command.js run",
+    "migration:revert": "npm run build && node dist/database/migration-command.js revert",
+    "migration:run:prod": "node dist/database/migration-command.js run:prod",
+    "seed:prod": "node dist/database/seed.js"
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",
@@ -58,6 +63,7 @@
     "@types/express": "^5.0.0",
     "@types/node": "^24.0.0",
     "@types/passport-jwt": "^4.0.1",
+    "@types/pg": "^8.23.1",
     "@types/supertest": "^7.0.0",
     "@vitest/coverage-v8": "^4.1.2",
     "oxlint": "^1.58.0",

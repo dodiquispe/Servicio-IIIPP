@@ -71,17 +71,17 @@ export class ServicioService {
         descripcion: `%${search.descripcion.trim()}%`,
       });
     }
-    if (search?.capacidad_simultanea !== undefined) {
+    if (typeof search?.capacidad_simultanea === 'number') {
       query.andWhere('servicio.capacidad_simultanea = :capacidad', {
         capacidad: search.capacidad_simultanea,
       });
     }
-    if (search?.duracion_sesion_min !== undefined) {
+    if (typeof search?.duracion_sesion_min === 'number') {
       query.andWhere('servicio.duracion_sesion_min = :duracion', {
         duracion: search.duracion_sesion_min,
       });
     }
-    if (search?.id_estado !== undefined) {
+    if (typeof search?.id_estado === 'number') {
       query.andWhere('servicio.id_estado = :idEstado', {
         idEstado: search.id_estado,
       });

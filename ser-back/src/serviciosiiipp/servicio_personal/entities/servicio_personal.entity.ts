@@ -61,7 +61,7 @@ export class ServicioPersonal {
 
   @Field(() => String)
   get vigencia(): string {
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/La_Paz' }).format(new Date());
     return this.fecha_inicio <= hoy && (!this.fecha_fin || this.fecha_fin >= hoy)
       ? 'Vigente'
       : 'No vigente';

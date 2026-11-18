@@ -246,11 +246,11 @@ const days = computed(() => {
     const date = new Date(firstDay);
     date.setUTCDate(firstDay.getUTCDate() + offset);
     result.push({
-      value: localDate(date),
+      value: date.toISOString().slice(0, 10),
       weekday: new Intl.DateTimeFormat("es", { weekday: "short", timeZone: "UTC" })
         .format(date)
         .replace(".", ""),
-      number: String(date.getDate()),
+      number: String(date.getUTCDate()),
       month: new Intl.DateTimeFormat("es", { month: "short", timeZone: "UTC" })
         .format(date)
         .replace(".", ""),

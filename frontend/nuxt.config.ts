@@ -5,8 +5,7 @@ export default defineNuxtConfig({
   devServer: { port: 3001 },
   runtimeConfig: {
     public: {
-      graphqlUrl:
-        process.env.NUXT_PUBLIC_GRAPHQL_URL ?? "http://localhost:3000/graphql",
+      apiUrl: "",
     },
   },
   modules: ["vuetify-nuxt-module", "@pinia/nuxt"],

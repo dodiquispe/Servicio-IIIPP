@@ -150,7 +150,7 @@ const login = async () => {
         loginUsuario?: SessionData;
       };
       errors?: Array<{ message: string }>;
-    }>(config.public.graphqlUrl, {
+    }>(config.public.apiUrl, {
       method: "POST",
       body: {
         query: $querys.publicas.login,

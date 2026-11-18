@@ -20,7 +20,7 @@ export class CitasService {
   constructor(
     @InjectDataSource('services') private readonly db: DataSource,
     private readonly estados: EstadoService,
-    @Inject(forwardRef(() => AtencionService)) private readonly atencion: Pick<AtencionService, 'disponibilidad'>,
+    @Inject(forwardRef(() => AtencionService)) private readonly atencion: Pick<AtencionService, 'disponibilidadConManager'>,
   ) {}
 
   private async audit(manager: EntityManager, actor: string, accion: string, datos: Record<string, unknown>) {
@@ -104,7 +104,7 @@ export class CitasService {
       await this.lock(manager, `reserva-${reserva.id_servicio}-${reserva.fecha}`);
       const responsable = await this.obtenerResponsable(manager, reserva.id_servicio, reserva.fecha);
       await this.lock(manager, `profesional-${responsable}-${reserva.fecha}`);
-      await this.validateSlot(reserva, responsable);
+      await this.validateSlot(manager, reserva, responsable);
       pago.id_estado = await this.estados.obtenerEstadoId('ESTADO_PAGO', 'PAGADO', manager);
       pago.fecha_confirmacion = new Date();
       pago.id_transaccion_proveedor = `${simulado ? 'SIM' : 'VER'}-${randomUUID()}`;
@@ -139,8 +139,8 @@ export class CitasService {
     return assignment.id_usuario;
   }
 
-  private async validateSlot(reserva: Reserva, profesional: string) {
-    const slots = await this.atencion.disponibilidad(reserva.id_servicio, reserva.fecha, reserva.id);
+  private async validateSlot(manager: EntityManager, reserva: Reserva, profesional: string) {
+    const slots = await this.atencion.disponibilidadConManager(manager, reserva.id_servicio, reserva.fecha, reserva.id);
     if (!slots.some(s => s.hora_inicio === reserva.hora_inicio && s.hora_fin === reserva.hora_fin && s.id_profesional === profesional)) {
       throw new BadRequestException('No existe disponibilidad o capacidad para esta cita');
     }
@@ -199,7 +199,7 @@ export class CitasService {
       const cita = await this.cita(manager, id);
       await this.authorize(cita, actor, roles);
       this.assertOpen(cita);
-      const [today] = await manager.query('SELECT CURRENT_DATE::text AS fecha');
+      const [today] = await manager.query("SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'America/La_Paz')::date::text AS fecha");
       if (cita.fecha > today.fecha) throw new BadRequestException('No puede registrar asistencia futura');
       const estado = asistio ? 'ATENDIDA' : 'NO_ASISTIO';
       cita.id_estado = await this.estados.obtenerEstadoId('ESTADO_CITA', estado, manager);
@@ -239,7 +239,7 @@ export class CitasService {
       const reserva = await this.reservation(manager, cita.id_reserva);
       await this.lock(manager, `reserva-${cita.id_servicio}-${datos.fecha}`);
       for (const p of [cita.id_responsable, cita.id_practicante].filter(Boolean).sort()) await this.lock(manager, `profesional-${p}-${datos.fecha}`);
-      const slots = await this.atencion.disponibilidad(cita.id_servicio, datos.fecha, reserva.id);
+      const slots = await this.atencion.disponibilidadConManager(manager, cita.id_servicio, datos.fecha, reserva.id);
       const hora = datos.hora_inicio.length === 5 ? `${datos.hora_inicio}:00` : datos.hora_inicio;
       const slot = slots.find(s => s.hora_inicio === hora && s.id_profesional === cita.id_responsable);
       if (!slot) throw new BadRequestException('El nuevo horario no está disponible');

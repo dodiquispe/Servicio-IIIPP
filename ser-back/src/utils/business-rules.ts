@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import moment from 'moment-timezone';
 import type { EntityManager } from 'typeorm';
 import { UsuarioRol } from '../seguridad/usuario_rol/entities/usuario_rol.entity.js';
 
@@ -95,12 +96,13 @@ export function validateReservationDate(
   time: string,
   now = new Date(),
 ): void {
-  const appointment = new Date(`${date}T${time.slice(0, 8)}-04:00`);
-  if (Number.isNaN(appointment.getTime())) {
+  const localTime = time.length === 5 ? `${time}:00` : time.slice(0, 8);
+  const appointment = moment.tz(`${date}T${localTime}`, 'YYYY-MM-DDTHH:mm:ss', true, 'America/La_Paz');
+  if (!appointment.isValid()) {
     throw new BadRequestException('La fecha y hora de reserva no son válidas');
   }
 
-  if (appointment.getTime() <= now.getTime()) {
+  if (appointment.valueOf() <= now.getTime()) {
     throw new BadRequestException('No se puede reservar en una fecha u hora pasada');
   }
 }

@@ -6,7 +6,7 @@ export default defineNuxtPlugin(() => {
 
   return {
     provide: {
-      service: createService(config.public.graphqlUrl, () => session.accessToken.value, () => {
+      service: createService(config.public.apiUrl, () => session.accessToken.value, () => {
         session.clear();
         useMessage().warning("La cuenta está inactiva o la sesión venció. Inicia sesión nuevamente.");
         void navigateTo("/auth/login");
