@@ -4,7 +4,8 @@ import type { DataSourceOptions } from 'typeorm';
 export const production = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
 
 export function databaseOptions(direct = false): Extract<DataSourceOptions, { type: 'postgres' }> {
-  const variable = direct ? 'DATABASE_URL_DIRECT' : 'DATABASE_URL';
+  const useNeonUnpooled = !direct && process.env.VERCEL === '1' && Boolean(process.env.DATABASE_URL_UNPOOLED?.trim());
+  const variable = direct ? 'DATABASE_URL_DIRECT' : useNeonUnpooled ? 'DATABASE_URL_UNPOOLED' : 'DATABASE_URL';
   const rawUrl = process.env[variable]?.trim();
   let url: URL | undefined;
   if (rawUrl) {
