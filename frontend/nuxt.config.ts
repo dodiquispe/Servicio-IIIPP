@@ -1,13 +1,24 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { fileURLToPath } from "node:url";
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: false },
   devServer: { port: 3001 },
   runtimeConfig: {
+    previewGraphqlUpstream: "",
+    previewGraphqlBypass: "",
     public: {
       apiUrl: "",
     },
   },
+  serverHandlers: [
+    {
+      route: "/graphql",
+      method: "post",
+      handler: fileURLToPath(new URL("./utils/preview-graphql.ts", import.meta.url)),
+    },
+  ],
   modules: ["vuetify-nuxt-module", "@pinia/nuxt"],
   css: [
     "@mdi/font/css/materialdesignicons.css",
