@@ -1,4 +1,5 @@
 import type { DataSourceOptions } from 'typeorm';
+import pg from 'pg';
 
 export const production = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
 
@@ -29,6 +30,7 @@ export function databaseOptions(direct = false): Extract<DataSourceOptions, { ty
   const ssl = process.env.DB_SSL === 'true' || (process.env.DB_SSL !== 'false' && Boolean(url));
   return {
     type: 'postgres',
+    driver: pg,
     ...(url ? { url: url.toString() } : {
       host: process.env.DB_HOST,
       port: Number(process.env.DB_PORT ?? 5432),
