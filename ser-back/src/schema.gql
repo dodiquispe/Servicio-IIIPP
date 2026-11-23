@@ -1008,7 +1008,14 @@ input CreateServicioInput {
   descripcion: String!
   capacidad_simultanea: Int!
   duracion_sesion_min: Int!
+  horarios: [HorarioServicioInput!]
   id_estado: Int
+}
+
+input HorarioServicioInput {
+  id_dia: Int!
+  hora_inicio: String!
+  hora_fin: String!
 }
 
 input UpdateServicioInput {
@@ -1016,6 +1023,7 @@ input UpdateServicioInput {
   descripcion: String
   capacidad_simultanea: Int
   duracion_sesion_min: Int
+  horarios: [HorarioServicioInput!]
   id_estado: Int
   id: String!
 }

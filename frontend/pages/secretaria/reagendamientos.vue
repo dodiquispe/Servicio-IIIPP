@@ -24,6 +24,7 @@
       :source-reload="cargarReservas"
     >
       <template #source-filters>
+        <v-select v-model="servicioFiltro" :items="serviciosFiltro" label="Servicio" density="compact" variant="outlined" clearable hide-details class="mb-3" />
         <v-select v-model="estadoFiltro" :items="estadosFiltro" label="Filtrar por estado" density="compact" variant="outlined" clearable hide-details class="mb-3" />
       </template>
       <template #source-toolbar>
@@ -33,30 +34,30 @@
         </v-btn>
       </template>
       <template #paciente="{ item }">
-        {{ nombrePaciente(item) }}
+        {{ nombrePaciente(asBooking(item)) }}
       </template>
       <template #fecha="{ item }">
-        {{ formatoFecha(item.fecha) }}
+        {{ formatoFecha(String(item.fecha)) }}
       </template>
       <template #estado_reserva="{ item }">
         <v-chip
           size="small"
-          :color="item.estado_reserva === 'NO_ASISTIO' ? 'error' : 'primary'"
+          :color="String(item.estado_reserva) === 'NO_ASISTIO' ? 'error' : 'primary'"
           variant="tonal"
         >
-          {{ etiquetaEstado(item.estado_reserva) }}
+          {{ etiquetaEstado(String(item.estado_reserva)) }}
         </v-chip>
       </template>
       <template #acciones="{ item }">
         <v-btn
-          v-if="item.estado_reserva === 'NO_ASISTIO'"
+          v-if="canRebook(item)"
           icon="mdi-calendar-refresh"
           size="small"
           color="primary"
           variant="flat"
           class="table-action-btn"
-          :aria-label="`Reagendar ${nombrePaciente(item)}`"
-          @click="seleccionar(item)"
+          :aria-label="`Reagendar ${nombrePaciente(asBooking(item))}`"
+          @click="seleccionar(asBooking(item))"
         >
           <v-tooltip activator="parent" location="bottom">Reagendar</v-tooltip>
         </v-btn>
@@ -136,12 +137,11 @@ interface Booking extends CrudRecord {
   id_expediente: string;
   id_servicio: string;
   id_profesional: string;
-  id_expediente: string;
   fecha: string;
   hora_inicio: string;
   hora_fin: string;
   estado_reserva: string;
-  servicio: { servicio: string };
+  servicio: { servicio: string; id_estado: number };
   expediente: {
     id_persona: string;
     codigo_caso: string;
@@ -167,9 +167,12 @@ const estadosFiltro = [
   { title: "Reagendada", value: "REAGENDADA" },
   { title: "Todas", value: null },
 ];
-const reservasFiltradas = computed(() => estadoFiltro.value
-  ? reservas.value.filter((booking) => booking.estado_reserva === estadoFiltro.value)
-  : reservas.value);
+const servicioFiltro = ref<string | null>(null);
+const serviciosFiltro = computed(() => [...new Map(reservas.value.filter(booking => booking.servicio.id_estado === 1).map(booking => [booking.id_servicio, { title: booking.servicio.servicio, value: booking.id_servicio }])).values()]);
+const reservasFiltradas = computed(() => reservas.value.filter((booking) =>
+  (!estadoFiltro.value || booking.estado_reserva === estadoFiltro.value) &&
+  (!servicioFiltro.value || booking.id_servicio === servicioFiltro.value),
+));
 const seleccionada = ref<Booking | null>(null);
 const horarios = ref<Slot[]>([]);
 const dialogo = ref(false);
@@ -208,7 +211,7 @@ watch(fechaNueva, async (date) => {
     });
     horarios.value = result.horariosDisponibles.filter(
       (slot) => slot.id_profesional === seleccionada.value?.id_profesional,
-    );
+    ).filter(slot => withinMinimumLead(date, slot.hora_inicio));
   } catch (requestError) {
     errorDialogo.value =
       requestError instanceof Error
@@ -291,6 +294,22 @@ function nombrePaciente(booking: Booking) {
     .filter(Boolean)
     .join(" ");
 }
+function asBooking(record: CrudRecord): Booking { return record as Booking; }
+function canRebook(record: CrudRecord): boolean {
+  const booking = asBooking(record);
+  return booking.estado_reserva === "NO_ASISTIO" && booking.servicio.id_estado === 1;
+}
+function withinMinimumLead(date: string, hour: string): boolean {
+  const now = new Date(Date.now() + 60 * 60_000);
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "America/La_Paz", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  if (date < parts) return false;
+  if (date > parts) return true;
+  const time = new Intl.DateTimeFormat("en-GB", { timeZone: "America/La_Paz", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(now);
+  const [h = 0, m = 0] = time.split(":").map(Number);
+  const minimum = h * 60 + m + (now.getSeconds() ? 1 : 0);
+  const [slotHour = 0, slotMinute = 0] = hour.split(":").map(Number);
+  return slotHour * 60 + slotMinute >= minimum;
+}
 function etiquetaEstado(value: string) {
   const labels: Record<string, string> = {
     RESERVADA: "Reservada",
@@ -303,7 +322,7 @@ function etiquetaEstado(value: string) {
   return labels[value] ?? value;
 }
 function formatoFecha(date: string) {
-  const [year, month, day] = date.split("-").map(Number);
+  const [year = 1970, month = 1, day = 1] = date.split("-").map(Number);
   return new Intl.DateTimeFormat("es", { dateStyle: "medium" }).format(
     new Date(year, month - 1, day),
   );

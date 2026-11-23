@@ -4,6 +4,7 @@ import {
   hasAvailableCapacity,
   preservesAssignedProfessional,
   roleRank,
+  serviceScheduleStarts,
   validateReservationDate,
 } from './business-rules.js';
 
@@ -55,5 +56,22 @@ describe('reservation continuity and capacity', () => {
     expect(preservesAssignedProfessional('p1', 'p1', false)).toBe(true);
     expect(preservesAssignedProfessional('p1', 'p2', false)).toBe(false);
     expect(preservesAssignedProfessional('p1', 'r1', true)).toBe(true);
+  });
+});
+
+describe('service schedule turns', () => {
+  const display = (minutes: number[]) => minutes.map(value => `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`);
+
+  it('starts at the configured hour and advances hourly for 60-minute sessions', () => {
+    expect(display(serviceScheduleStarts('09:00', '13:00', 60))).toEqual(['09:00', '10:00', '11:00', '12:00']);
+  });
+
+  it('advances every 30 minutes when the service duration is 30 minutes', () => {
+    expect(display(serviceScheduleStarts('09:00', '10:30', 30))).toEqual(['09:00', '09:30', '10:00']);
+  });
+
+  it('does not include a turn that ends after closing and preserves explicitly configured half hours', () => {
+    expect(display(serviceScheduleStarts('09:00', '10:59', 60))).toEqual(['09:00']);
+    expect(display(serviceScheduleStarts('08:30', '10:30', 60))).toEqual(['08:30', '09:30']);
   });
 });

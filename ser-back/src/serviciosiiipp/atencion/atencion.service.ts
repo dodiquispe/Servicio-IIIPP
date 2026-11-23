@@ -13,6 +13,7 @@ import { DataSource, EntityManager, IsNull, In, Not, Repository } from 'typeorm'
 import {
   hasAvailableCapacity,
   preservesAssignedProfessional,
+  serviceScheduleStarts,
   validateReservationDate,
 } from '../../utils/business-rules.js';
 import { Persona } from '../../seguridad/persona/entities/persona.entity.js';
@@ -52,6 +53,7 @@ import { InstitucionReferencia } from '../institucion-referencia/entities/instit
 import { Disponibilidad } from '../disponibilidad/entities/disponibilidad.entity.js';
 import { Parametro } from '../../public/parametros/entities/parametro.entity.js';
 import { Estado } from '../../seguridad/estado/entities/estado.entity.js';
+import { boliviaHoliday } from './bolivia-holidays.js';
 
 const estadosQueOcupanCupo = [
   EstadoReserva.RESERVADA,
@@ -241,6 +243,11 @@ export class AtencionService {
               responsable, servicio, codigo_caso, paciente, estado, motivo
        FROM serviciosiiipp.v_agenda_semanal
        WHERE fecha BETWEEN $1::date AND $2::date AND ${roleFilter}
+         AND (tipo_evento = 'BLOQUE' OR id IN (
+           SELECT 'reserva:' || paid.id::text
+           FROM serviciosiiipp.reserva paid
+           WHERE paid.estado_pago::text = 'Pagado'
+         ))
        ORDER BY fecha, hora_inicio, servicio, paciente`,
       params,
     );
@@ -409,7 +416,11 @@ export class AtencionService {
     const where = `WHERE ($1::date IS NULL OR fecha >= $1::date)
       AND ($2::date IS NULL OR fecha <= $2::date)
       AND ($3::varchar IS NULL OR id_responsable = $3::varchar OR (tipo_evento = 'BLOQUE' AND id_responsable IS NULL AND id_profesional IS NULL))
-      AND ($4::varchar IS NULL OR id_servicio = $4::varchar OR (tipo_evento = 'BLOQUE' AND id_servicio IS NULL))`;
+      AND ($4::varchar IS NULL OR id_servicio = $4::varchar OR (tipo_evento = 'BLOQUE' AND id_servicio IS NULL))
+      AND (tipo_evento = 'BLOQUE' OR id IN (
+        SELECT 'reserva:' || paid.id::text FROM serviciosiiipp.reserva paid
+        WHERE paid.estado_pago::text = 'Pagado'
+      ))`;
     const params = [search.fecha_inicial ?? null, search.fecha_final ?? null, search.id_responsable || null, search.id_servicio || null];
     const [rows, counts] = await Promise.all([
       this.dataSource.query<AgendaWeekEvent[]>(
@@ -850,8 +861,9 @@ export class AtencionService {
     fecha: string,
     excludeReservationId?: string,
     idPersona?: string,
+    minimumLeadMinutes = 0,
   ) {
-    return this.disponibilidadConManager(this.dataSource.manager, idServicio, fecha, excludeReservationId, idPersona);
+    return this.disponibilidadConManager(this.dataSource.manager, idServicio, fecha, excludeReservationId, idPersona, minimumLeadMinutes);
   }
 
   async disponibilidadConManager(
@@ -860,6 +872,7 @@ export class AtencionService {
     fecha: string,
     excludeReservationId?: string,
     idPersona?: string,
+    minimumLeadMinutes = 0,
   ): Promise<Array<{ hora_inicio: string; hora_fin: string; id_profesional: string; es_responsable_por_fallback: boolean }>> {
     this.validateDate(fecha);
     if (fecha < boliviaDate(new Date())) {
@@ -894,6 +907,10 @@ export class AtencionService {
     const responsibleAssignments = assignments.filter((assignment) =>
       normalize(assignment.rol?.descripcion ?? '').includes('responsable'),
     );
+    if (!responsibleAssignments.some((assignment) => assignment.id_estado === 1 && assignment.usuario.id_estado === 1)) {
+      throw new BadRequestException('Este servicio aún no tiene un responsable asignado. Debe asignar un responsable desde el módulo Equipo de trabajo o crear uno nuevo allí.');
+    }
+    if (boliviaHoliday(fecha)) return [];
     let fallbackToResponsible = false;
     if (idPersona) {
       const activeCase = await manager.getRepository(Expediente)
@@ -945,8 +962,12 @@ export class AtencionService {
       .andWhere('(block.id_servicio IS NULL OR block.id_servicio = :idServicio)', { idServicio })
       .getMany();
     const now = new Date();
-    const minimumStart =
-      fecha === boliviaDate(now) ? toMinutes(boliviaTime(now)) : -1;
+    const minimumTime = new Date(now.getTime() + minimumLeadMinutes * 60_000);
+    const minimumDate = boliviaDate(minimumTime);
+    if (minimumLeadMinutes > 0 && fecha < minimumDate) return [];
+    const minimumStart = fecha === minimumDate
+      ? toMinutes(boliviaTime(minimumTime)) + (minimumTime.getSeconds() > 0 ? 1 : 0)
+      : -1;
     const slots = new Map<
       string,
       { hora_inicio: string; hora_fin: string; id_profesional: string; es_responsable_por_fallback: boolean }
@@ -983,16 +1004,8 @@ export class AtencionService {
         : baseSchedules;
 
       for (const schedule of professionalSchedules) {
-        const start =
-          Math.ceil(Math.max(toMinutes(schedule.hora_inicio), 9 * 60) / 60) *
-          60;
-        const end = toMinutes(schedule.hora_fin);
-        for (
-          let time = start;
-          time + servicio.duracion_sesion_min <= end;
-          time += servicio.duracion_sesion_min
-        ) {
-          if (fecha === boliviaDate(now) && time <= minimumStart) {
+        for (const time of serviceScheduleStarts(schedule.hora_inicio, schedule.hora_fin, servicio.duracion_sesion_min)) {
+          if (fecha === minimumDate && time < minimumStart) {
             continue;
           }
           const timeEnd = time + servicio.duracion_sesion_min;
@@ -1371,7 +1384,8 @@ export class AtencionService {
     }
     if (
       reservation.estado_reserva !== EstadoReserva.NO_ASISTIO ||
-      (reservation.id_marcado_no_asistio_por !== input.solicitado_por && !hasRole(actorRoles, 'administrador'))
+      (reservation.id_marcado_no_asistio_por !== input.solicitado_por &&
+        !hasRole(actorRoles, 'administrador') && !hasRole(actorRoles, 'secretaria'))
     ) {
       throw new BadRequestException(
         'El reagendamiento requiere una reserva marcada como no asistida por el usuario solicitante',
@@ -1396,7 +1410,7 @@ export class AtencionService {
         await this.citasService.reagendarCita(linkedCita.id, { fecha: input.fecha_nueva, hora_inicio: input.hora_nueva, motivo: input.motivo }, input.solicitado_por, actorRoles);
         return this.reagendamientoRepository.findOneOrFail({ where: { id_reserva: reservation.id }, order: { numero_reagendamiento: 'DESC' } });
       }
-      const slot = (await this.disponibilidad(reservation.id_servicio, input.fecha_nueva, reservation.id)).find(
+      const slot = (await this.disponibilidadConManager(this.dataSource.manager, reservation.id_servicio, input.fecha_nueva, reservation.id, undefined, 60)).find(
         (candidate) =>
           candidate.hora_inicio === normalizeTime(input.hora_nueva!) &&
           candidate.id_profesional === reservation.id_profesional,
@@ -1583,11 +1597,16 @@ export class AtencionService {
       const first = block.fecha_inicio < desde ? desde : block.fecha_inicio;
       const last = block.fecha_fin > hasta ? hasta : block.fecha_fin;
       for (let date = first; date <= last; date = addDays(date, 1)) {
-        result.set(date, block.tipo);
+        result.set(date, `${block.tipo}: ${block.motivo}`);
       }
     }
     for (let date = desde; date <= hasta; date = addDays(date, 1)) {
       if (result.has(date)) continue;
+      const holiday = boliviaHoliday(date);
+      if (holiday) {
+        result.set(date, holiday);
+        continue;
+      }
       const slots = await this.disponibilidad(idServicio, date, undefined, idPersona);
       if (!slots.length) result.set(date, 'Sin atención o disponibilidad');
     }
@@ -1620,7 +1639,9 @@ export class AtencionService {
     return this.bloqueRepository.save(
       this.bloqueRepository.create({
         ...input,
-        tipo: 'Cierre',
+        tipo: input.id_servicio
+          ? /feriado/i.test(input.motivo) ? 'Feriado específico del servicio' : 'Cierre del servicio'
+          : 'Bloqueo manual general',
         id: randomUUID(),
         id_servicio: input.id_servicio ?? null,
         id_profesional: input.id_profesional ?? null,

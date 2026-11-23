@@ -3,10 +3,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { isUUID } from 'class-validator';
 import { v4 as uuid } from 'uuid';
-import { Not, QueryFailedError, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, IsNull, Not, QueryFailedError, Repository } from 'typeorm';
+import { Horario } from '../horario/entities/horario.entity.js';
+import { Parametro } from '../../public/parametros/entities/parametro.entity.js';
 import { ServicioArgs, ServicioOrderArgs } from './args/servicio.args.js';
 import { CreateServicioInput } from './dto/create-servicio.input.js';
 import { UpdateServicioInput } from './dto/update-servicio.input.js';
@@ -26,17 +28,21 @@ export class ServicioService {
   constructor(
     @InjectRepository(Servicio, 'services')
     private readonly servicioRepository: Repository<Servicio>,
+    @InjectDataSource('services') private readonly dataSource: DataSource,
   ) {}
 
   async create(input: CreateServicioInput): Promise<Servicio> {
-    const servicio = this.servicioRepository.create({
-      ...input,
-      id: uuid(),
-      id_estado: input.id_estado ?? 1,
+    const { horarios, ...serviceData } = input;
+    return this.dataSource.transaction(async (manager) => {
+      const repository = manager.getRepository(Servicio);
+      const servicio = repository.create({ ...serviceData, id: uuid(), id_estado: input.id_estado ?? 1 });
+      this.validateService(servicio);
+      await this.validateUniqueName(servicio, repository);
+      const saved = await this.saveService(servicio, repository);
+      const schedule = horarios ?? await this.defaultServiceSchedule(manager);
+      await this.syncServiceSchedule(manager, saved.id, schedule);
+      return saved;
     });
-    this.validateService(servicio);
-    await this.validateUniqueName(servicio);
-    return this.saveService(servicio);
   }
 
   async findAll(
@@ -110,11 +116,19 @@ export class ServicioService {
   }
 
   async update(id: string, input: UpdateServicioInput): Promise<Servicio> {
-    const servicio = await this.findOne(id);
-    const updated = this.servicioRepository.merge(servicio, input);
-    this.validateService(updated);
-    await this.validateUniqueName(updated);
-    return this.saveService(updated);
+    this.validateId(id);
+    const { horarios, ...serviceData } = input;
+    return this.dataSource.transaction(async (manager) => {
+      const repository = manager.getRepository(Servicio);
+      const servicio = await repository.findOneBy({ id, id_estado: Not(3) });
+      if (!servicio) throw new NotFoundException(`No se encontró el servicio con ID ${id}`);
+      const updated = repository.merge(servicio, serviceData);
+      this.validateService(updated);
+      await this.validateUniqueName(updated, repository);
+      const saved = await this.saveService(updated, repository);
+      if (horarios !== undefined) await this.syncServiceSchedule(manager, id, horarios);
+      return saved;
+    });
   }
 
   async remove(id: string): Promise<Servicio> {
@@ -163,9 +177,9 @@ export class ServicioService {
     }
   }
 
-  private async validateUniqueName(service: Servicio): Promise<void> {
+  private async validateUniqueName(service: Servicio, repository = this.servicioRepository): Promise<void> {
     if (service.id_estado !== 1) return;
-    const exists = await this.servicioRepository
+    const exists = await repository
       .createQueryBuilder('servicio')
       .where('LOWER(BTRIM(servicio.servicio)) = LOWER(BTRIM(:name))', {
         name: service.servicio,
@@ -182,9 +196,9 @@ export class ServicioService {
     );
   }
 
-  private async saveService(service: Servicio): Promise<Servicio> {
+  private async saveService(service: Servicio, repository = this.servicioRepository): Promise<Servicio> {
     try {
-      return await this.servicioRepository.save(service);
+      return await repository.save(service);
     } catch (error) {
       if (error instanceof QueryFailedError) {
         const driver = error.driverError as {
@@ -199,6 +213,73 @@ export class ServicioService {
         }
       }
       throw error;
+    }
+  }
+
+  private async defaultServiceSchedule(manager: EntityManager) {
+    const weekdays = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
+    const days = await manager.getRepository(Parametro).findBy({ tipo: 'dia_semana', id_estado: 1 });
+    const slots: Array<{ id_dia: number; hora_inicio: string; hora_fin: string }> = [];
+    for (const weekday of weekdays) {
+      const matchingDays = days.filter((day) => normalizeDay(day.valor) === weekday);
+      if (matchingDays.length !== 1) throw new BadRequestException(`Debe existir un parámetro activo único para ${weekday}`);
+      for (const [hora_inicio, hora_fin] of [['09:00', '13:00'], ['14:00', '18:00']]) {
+        slots.push({ id_dia: matchingDays[0]!.id, hora_inicio, hora_fin });
+      }
+    }
+    return slots;
+  }
+
+  private async syncServiceSchedule(
+    manager: EntityManager,
+    serviceId: string,
+    desired: Array<{ id_dia: number; hora_inicio: string; hora_fin: string }>,
+  ): Promise<void> {
+    const dayIds = [...new Set(desired.map((slot) => slot.id_dia))];
+    const validDays = dayIds.length
+      ? await manager.getRepository(Parametro).findBy({ id: In(dayIds), tipo: 'dia_semana', id_estado: 1 })
+      : [];
+    if (validDays.length !== dayIds.length) throw new BadRequestException('Seleccione días de atención activos y válidos');
+
+    const byDay = new Map<number, typeof desired>();
+    for (const slot of desired) {
+      const start = serviceTimeMinutes(slot.hora_inicio);
+      const end = serviceTimeMinutes(slot.hora_fin);
+      if (start >= end) throw new BadRequestException('La hora final debe ser posterior a la hora inicial');
+      const rows = byDay.get(slot.id_dia) ?? [];
+      rows.push(slot);
+      byDay.set(slot.id_dia, rows);
+    }
+    for (const rows of byDay.values()) {
+      rows.sort((a, b) => serviceTimeMinutes(a.hora_inicio) - serviceTimeMinutes(b.hora_inicio));
+      for (let index = 1; index < rows.length; index += 1) {
+        if (serviceTimeMinutes(rows[index - 1]!.hora_fin) > serviceTimeMinutes(rows[index]!.hora_inicio)) {
+          throw new BadRequestException('Los intervalos de atención de un día no pueden superponerse');
+        }
+      }
+    }
+
+    const repository = manager.getRepository(Horario);
+    const current = await repository.find({
+      where: { id_servicio: serviceId, id_profesional: IsNull(), id_estado: Not(3) },
+      order: { id_dia: 'ASC', hora_inicio: 'ASC', id_horario: 'ASC' },
+    });
+    const currentByDay = new Map<number, Horario[]>();
+    for (const row of current) currentByDay.set(row.id_dia, [...(currentByDay.get(row.id_dia) ?? []), row]);
+
+    for (const [idDia, slots] of byDay) {
+      const existing = currentByDay.get(idDia) ?? [];
+      for (let index = 0; index < slots.length; index += 1) {
+        const slot = slots[index]!;
+        const row = existing[index] ?? repository.create({ id_servicio: serviceId, id_profesional: null, id_dia: idDia });
+        repository.merge(row, { ...slot, id_servicio: serviceId, id_profesional: null, id_estado: 1 });
+        await repository.save(row);
+      }
+      for (const stale of existing.slice(slots.length)) await repository.save({ ...stale, id_estado: 3 });
+      currentByDay.delete(idDia);
+    }
+    for (const rows of currentByDay.values()) {
+      for (const stale of rows) await repository.save({ ...stale, id_estado: 3 });
     }
   }
 
@@ -218,4 +299,16 @@ export class ServicioService {
       throw new BadRequestException('pagina debe ser un entero mayor que 0');
     }
   }
+}
+
+function normalizeDay(value: string): string {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+}
+
+function serviceTimeMinutes(value: string): number {
+  if (!/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(value)) {
+    throw new BadRequestException('La hora debe tener el formato HH:mm o HH:mm:ss');
+  }
+  const [hour = 0, minute = 0] = value.split(':').map(Number);
+  return hour * 60 + minute;
 }

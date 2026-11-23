@@ -200,15 +200,15 @@ interface TimeSlot {
 }
 
 const modalidad = ref<Jornada>("discontinua");
-const inicio = ref("08:30");
-const fin = ref("18:30");
-const mananaInicio = ref("08:30");
-const mananaFin = ref("12:30");
-const tardeInicio = ref("14:30");
-const tardeFin = ref("18:30");
+const inicio = ref("09:00");
+const fin = ref("18:00");
+const mananaInicio = ref("09:00");
+const mananaFin = ref("13:00");
+const tardeInicio = ref("14:00");
+const tardeFin = ref("18:00");
 const sabado = ref(false);
-const sabInicio = ref("08:30");
-const sabFin = ref("12:30");
+const sabInicio = ref("09:00");
+const sabFin = ref("13:00");
 const loading = ref(false);
 const horariosActuales = ref<ScheduleRecord[]>([]);
 const sabadoDisponible = computed(() => dayId("sabado") !== undefined);
@@ -223,15 +223,15 @@ function dayId(name: string): number | undefined {
 
 function resetDefaults(): void {
   modalidad.value = "discontinua";
-  inicio.value = "08:30";
-  fin.value = "18:30";
-  mananaInicio.value = "08:30";
-  mananaFin.value = "12:30";
-  tardeInicio.value = "14:30";
-  tardeFin.value = "18:30";
+  inicio.value = "09:00";
+  fin.value = "18:00";
+  mananaInicio.value = "09:00";
+  mananaFin.value = "13:00";
+  tardeInicio.value = "14:00";
+  tardeFin.value = "18:00";
   sabado.value = false;
-  sabInicio.value = "08:30";
-  sabFin.value = "12:30";
+  sabInicio.value = "09:00";
+  sabFin.value = "13:00";
 }
 
 function applyExistingSchedule(rows: ScheduleRecord[]): void {
@@ -391,6 +391,14 @@ async function guardarDesdeDialogo(): Promise<void> {
 async function guardar(): Promise<void> {
   const desiredSlots = crearSlots();
   try {
+    if (!props.idProfesional) {
+      await $service.graphql({
+        query: `mutation ActualizarHorarioServicio($datos: UpdateServicioInput!) { updateServicio(updateServicioInput: $datos) { id } }`,
+        variables: { datos: { id: props.servicio.id, horarios: desiredSlots } },
+      });
+      await cargarHorarios();
+      return;
+    }
     const previousByDay = new Map<number, ScheduleRecord[]>();
     for (const row of horariosActuales.value) {
       const dayRows = previousByDay.get(row.id_dia) ?? [];

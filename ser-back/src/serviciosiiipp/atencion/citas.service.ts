@@ -14,6 +14,7 @@ import { Reagendamiento } from './entities/reagendamiento.entity.js';
 import { EstadoPago, EstadoReserva, ResultadoReagendamiento } from './atencion.enums.js';
 import { ReagendarCitaInput } from './dto/atencion.input.js';
 import { AtencionService } from './atencion.service.js';
+import { appointmentHasStarted, isConfirmedForAttendance } from './citas-rules.js';
 
 @Injectable()
 export class CitasService {
@@ -27,9 +28,10 @@ export class CitasService {
     await manager.getRepository(AccountActivity).save({ id: randomUUID(), id_usuario: actor, id_actor: actor, accion, datos, fecha: new Date() });
   }
 
-  private async authorize(cita: Cita, actor: string, roles: string[], assignment = false) {
-    const elevated = roles.some(r => /administrador|coordinador/i.test(r));
-    if (!elevated && cita.id_responsable !== actor && (assignment || cita.id_practicante !== actor)) {
+  private async authorize(cita: Cita, actor: string, roles: string[], assignment = false, allowSecretary = false) {
+    const elevated = roles.some(r => ['administrador', 'coordinador'].includes(r.toLocaleLowerCase()));
+    const secretaryRebooking = allowSecretary && roles.some(r => r.toLocaleLowerCase() === 'secretaria');
+    if (!elevated && !secretaryRebooking && cita.id_responsable !== actor && (assignment || cita.id_practicante !== actor)) {
       throw new ForbiddenException('No tiene permiso sobre esta cita');
     }
   }
@@ -135,7 +137,7 @@ export class CitasService {
       .where('a.id_servicio = :servicio AND a.id_estado = 1 AND u.id_estado = 1 AND u._deleted_at IS NULL AND r.id_estado = 1', { servicio })
       .andWhere('a.fecha_inicio <= :fecha AND (a.fecha_fin IS NULL OR a.fecha_fin >= :fecha)', { fecha })
       .andWhere('LOWER(r.descripcion) LIKE :role', { role: '%responsable%' }).orderBy('a.fecha_inicio', 'DESC').getOne();
-    if (!assignment) throw new BadRequestException('El servicio no tiene responsable vigente');
+    if (!assignment) throw new BadRequestException('Este servicio aún no tiene un responsable asignado. Debe asignar un responsable desde el módulo Equipo de trabajo o crear uno nuevo allí.');
     return assignment.id_usuario;
   }
 
@@ -199,11 +201,13 @@ export class CitasService {
       const cita = await this.cita(manager, id);
       await this.authorize(cita, actor, roles);
       this.assertOpen(cita);
-      const [today] = await manager.query("SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'America/La_Paz')::date::text AS fecha");
-      if (cita.fecha > today.fecha) throw new BadRequestException('No puede registrar asistencia futura');
+      if (!appointmentHasStarted(cita.fecha, cita.hora_inicio)) throw new BadRequestException('Solo puede registrar asistencia después de la hora de la cita');
       const estado = asistio ? 'ATENDIDA' : 'NO_ASISTIO';
       cita.id_estado = await this.estados.obtenerEstadoId('ESTADO_CITA', estado, manager);
       const reserva = await this.reservation(manager, cita.id_reserva);
+      if (!isConfirmedForAttendance(reserva.estado_reserva)) {
+        throw new BadRequestException('La reserva no está confirmada para registrar asistencia');
+      }
       reserva.estado_reserva = asistio ? EstadoReserva.ATENDIDA : EstadoReserva.NO_ASISTIO;
       if (!asistio) reserva.id_marcado_no_asistio_por = actor;
       await manager.save(reserva);
@@ -234,12 +238,12 @@ export class CitasService {
     if (!/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(datos.hora_inicio)) throw new BadRequestException('La hora debe tener el formato HH:mm o HH:mm:ss');
     return this.db.transaction(async manager => {
       const cita = await this.cita(manager, id);
-      await this.authorize(cita, actor, roles);
+      await this.authorize(cita, actor, roles, false, true);
       if (!['AGENDADA', 'NO_ASISTIO', 'REAGENDADA'].includes(cita.estado.descripcion)) throw new BadRequestException('La cita no admite reagendamiento');
       const reserva = await this.reservation(manager, cita.id_reserva);
       await this.lock(manager, `reserva-${cita.id_servicio}-${datos.fecha}`);
       for (const p of [cita.id_responsable, cita.id_practicante].filter(Boolean).sort()) await this.lock(manager, `profesional-${p}-${datos.fecha}`);
-      const slots = await this.atencion.disponibilidadConManager(manager, cita.id_servicio, datos.fecha, reserva.id);
+      const slots = await this.atencion.disponibilidadConManager(manager, cita.id_servicio, datos.fecha, reserva.id, undefined, 60);
       const hora = datos.hora_inicio.length === 5 ? `${datos.hora_inicio}:00` : datos.hora_inicio;
       const slot = slots.find(s => s.hora_inicio === hora && s.id_profesional === cita.id_responsable);
       if (!slot) throw new BadRequestException('El nuevo horario no está disponible');

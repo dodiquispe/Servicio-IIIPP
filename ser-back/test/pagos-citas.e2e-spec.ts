@@ -7,7 +7,7 @@ import { AppModule } from '../src/app.module.js';
 import { AtencionService } from '../src/serviciosiiipp/atencion/atencion.service.js';
 import { CitasService } from '../src/serviciosiiipp/atencion/citas.service.js';
 import { EstadoService } from '../src/seguridad/estado/estado.service.js';
-import { EstadoReserva } from '../src/serviciosiiipp/atencion/atencion.enums.js';
+import { EstadoReserva, ResultadoReagendamiento } from '../src/serviciosiiipp/atencion/atencion.enums.js';
 import { Cita } from '../src/serviciosiiipp/atencion/entities/cita.entity.js';
 import { Reserva } from '../src/serviciosiiipp/atencion/entities/reserva.entity.js';
 import { Expediente } from '../src/serviciosiiipp/atencion/entities/expediente.entity.js';
@@ -82,6 +82,8 @@ describe('Admisión, pagos y citas en PostgreSQL', () => {
       expect(slots.length).toBeGreaterThan(1);
       const first = slots[0]!;
       const created = await atencion.createReservaPublica({ id_persona: patient.id, id_servicio: service.id, id_profesional: responsable.id, fecha, hora_inicio: first.hora_inicio, motivo_consulta: 'Prueba integral' }, responsable.id);
+      const agendaPendiente = await atencion.findAgendaWeek(fecha, fecha, responsable.id, ['responsable']);
+      expect(agendaPendiente.some(event => event.id === `reserva:${created.reserva.id}`)).toBe(false);
       const pago = await citas.iniciarPago(created.reserva.id, responsable.id);
       expect(pago.estado.descripcion).toBe('PENDIENTE');
       const paid = await citas.confirmarPagoSimulado(pago.id, responsable.id);
@@ -90,6 +92,8 @@ describe('Admisión, pagos y citas en PostgreSQL', () => {
       await expect(citas.confirmarPagoSimulado(pago.id, responsable.id)).rejects.toThrow();
       const cita = await manager.getRepository(Cita).findOneOrFail({ where: { id_reserva: created.reserva.id }, relations: { estado: true } });
       expect(cita.estado.descripcion).toBe('AGENDADA');
+      const agendaPagada = await atencion.findAgendaWeek(fecha, fecha, responsable.id, ['responsable']);
+      expect(agendaPagada).toEqual(expect.arrayContaining([expect.objectContaining({ id: `reserva:${created.reserva.id}`, id_servicio: service.id, id_responsable: responsable.id, estado: 'AGENDADA' })]));
       expect(cita.id_practicante).toBeNull();
       expect((await atencion.disponibilidad(service.id, fecha)).some(s => s.hora_inicio === first.hora_inicio)).toBe(false);
       await expect(citas.asignarPracticante(cita.id, practicante.id, 'otro', ['responsable'])).rejects.toThrow();
@@ -112,10 +116,22 @@ describe('Admisión, pagos y citas en PostgreSQL', () => {
       await expect(citas.marcarAsistencia(cita.id, false, practicante.id, ['practicante'])).rejects.toThrow();
       const agendada = await app.get(EstadoService).obtenerEstadoId('ESTADO_CITA', 'AGENDADA', manager);
       await manager.update(Cita, cita.id, { id_estado: agendada });
+      await manager.update(Reserva, created.reserva.id, { estado_reserva: EstadoReserva.PAGADA });
       const missed = await citas.marcarAsistencia(cita.id, false, practicante.id, ['practicante']);
       expect(missed.estado.descripcion).toBe('NO_ASISTIO');
       expect((await manager.getRepository(Reserva).findOneByOrFail({ id: created.reserva.id })).estado_reserva).toBe(EstadoReserva.NO_ASISTIO);
-      await citas.reagendarCita(cita.id, { fecha, hora_inicio: first.hora_inicio, motivo: 'Inasistencia' }, responsable.id, ['responsable']);
+      const secretaryRebooking = await atencion.createReagendamiento({
+        id_reserva: created.reserva.id,
+        motivo: 'Reagendamiento autorizado por Secretaría',
+        solicitado_por: practicante.id,
+        autorizado_por: responsable.id,
+        resultado: ResultadoReagendamiento.AUTORIZADO,
+        fecha_anterior: date.hoy,
+        hora_anterior: slots[1]!.hora_inicio,
+        fecha_nueva: fecha,
+        hora_nueva: first.hora_inicio,
+      }, ['secretaria']);
+      expect(secretaryRebooking.resultado).toBe(ResultadoReagendamiento.AUTORIZADO);
       expect((await citas.cancelarCita(cita.id, 'Cancelación de prueba', responsable.id, ['responsable'])).estado.descripcion).toBe('CANCELADA');
 
       const second = await atencion.createReserva({ id_expediente: expediente.id, id_servicio: service.id, id_profesional: responsable.id, fecha, hora_inicio: first.hora_inicio });

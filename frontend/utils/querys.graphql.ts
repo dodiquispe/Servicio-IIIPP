@@ -169,7 +169,7 @@ const Querys = {
           id_estado_caso estado_actual { id descripcion tipo }
           conclusion_diagnostico derivaciones cerrado_por
           persona { nombres primer_apellido segundo_apellido nro_documento }
-          servicio { servicio }
+          servicio { servicio id_estado }
           responsable { id persona { nombres primer_apellido segundo_apellido } }
           profesional {
             id persona { nombres primer_apellido segundo_apellido }
@@ -277,7 +277,7 @@ const Querys = {
       query ReservasSecretaria($desde: String!, $hasta: String!) {
         reservas(desde: $desde, hasta: $hasta) {
           id id_expediente id_servicio id_profesional fecha hora_inicio hora_fin canal estado_reserva estado_pago
-          servicio { servicio }
+          servicio { servicio id_estado }
           expediente {
             codigo_caso
             persona { nombres primer_apellido segundo_apellido }

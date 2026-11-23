@@ -91,6 +91,25 @@ export function preservesAssignedProfessional(
   return assignedProfessional === selectedProfessional || usingResponsibleFallback;
 }
 
+export function serviceScheduleStarts(start: string, end: string, durationMinutes: number): number[] {
+  if (!Number.isInteger(durationMinutes) || durationMinutes <= 0) {
+    throw new BadRequestException('La duración del turno debe ser positiva');
+  }
+  const startMinutes = scheduleTimeMinutes(start);
+  const endMinutes = scheduleTimeMinutes(end);
+  const result: number[] = [];
+  for (let time = startMinutes; time + durationMinutes <= endMinutes; time += durationMinutes) result.push(time);
+  return result;
+}
+
+function scheduleTimeMinutes(value: string): number {
+  if (!/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(value)) {
+    throw new BadRequestException('La hora del servicio debe tener el formato HH:mm');
+  }
+  const [hour = 0, minute = 0] = value.split(':').map(Number);
+  return hour * 60 + minute;
+}
+
 export function validateReservationDate(
   date: string,
   time: string,

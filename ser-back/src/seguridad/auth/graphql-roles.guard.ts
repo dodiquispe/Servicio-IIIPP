@@ -33,17 +33,15 @@ export class GraphqlRolesGuard implements CanActivate {
       req: AuthenticatedRequest;
     }>();
     const roles = gqlContext.req.user?.roles ?? [];
-    if (
-      !roles.some((role) =>
-        requiredRoles.some((required) =>
-          normalize(role).includes(normalize(required)),
-        ),
-      )
-    ) {
+    if (!hasRequiredRole(roles, requiredRoles)) {
       throw new ForbiddenException('No tiene permiso para esta operación');
     }
     return true;
   }
+}
+
+export function hasRequiredRole(roles: string[], requiredRoles: string[]): boolean {
+  return roles.some((role) => requiredRoles.some((required) => normalize(role) === normalize(required)));
 }
 
 function normalize(value: string): string {

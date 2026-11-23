@@ -1,12 +1,34 @@
 import { InputType, Int, Field } from '@nestjs/graphql';
 import {
+  IsArray,
   IsNotEmpty,
   IsString,
   IsInt,
   IsOptional,
   MaxLength,
   Min,
+  ValidateNested,
+  Matches,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+@InputType()
+export class HorarioServicioInput {
+  @Field(() => Int)
+  @IsInt()
+  @Min(1)
+  id_dia: number;
+
+  @Field()
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/)
+  hora_inicio: string;
+
+  @Field()
+  @IsString()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/)
+  hora_fin: string;
+}
 
 @InputType()
 export class CreateServicioInput {
@@ -37,6 +59,13 @@ export class CreateServicioInput {
   @IsInt({ message: 'La duración de sesión debe ser mayor a 15 minutos' })
   @Min(16, { message: 'La duración de sesión debe ser mayor a 15 minutos' })
   duracion_sesion_min: number;
+
+  @Field(() => [HorarioServicioInput], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => HorarioServicioInput)
+  horarios?: HorarioServicioInput[];
 
   @Field(() => Int, { nullable: true })
   @IsInt()

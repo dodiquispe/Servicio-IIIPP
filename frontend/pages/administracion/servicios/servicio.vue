@@ -9,7 +9,6 @@
       :order="{ key: 'servicio', order: 'asc' }"
       :inputs="serviceInputs"
       :can-create="diasLaboralesDisponibles"
-      :after-create="crearHorariosIniciales"
     >
       <template #horarios="{ item }">
         <v-btn
@@ -134,42 +133,6 @@ async function cargarDiasSemana(): Promise<void> {
         ? error.message
         : "No se pudieron cargar los días de la semana",
     );
-  }
-}
-
-async function crearHorariosIniciales(
-  servicioCreado: CrudRecord,
-): Promise<void> {
-  if (typeof servicioCreado.id !== "string") {
-    throw new Error("La respuesta de creación no incluyó el UUID del servicio");
-  }
-
-  const intervalos = [
-    { hora_inicio: "08:30", hora_fin: "12:30" },
-    { hora_inicio: "14:30", hora_fin: "18:30" },
-  ];
-
-  for (const weekday of WEEKDAY_NAMES) {
-    const dia = findDayParameter(diasSemana.value, weekday);
-    if (!dia) {
-      throw new Error(
-        `No se encontró un parámetro único activo para ${weekday}`,
-      );
-    }
-
-    for (const intervalo of intervalos) {
-      await $service.graphql({
-        query: $querys.mutationCreateWithVariable("horario", "id_horario"),
-        variables: {
-          datos: {
-            id_servicio: servicioCreado.id,
-            id_dia: dia.id,
-            ...intervalo,
-            id_estado: 1,
-          },
-        },
-      });
-    }
   }
 }
 

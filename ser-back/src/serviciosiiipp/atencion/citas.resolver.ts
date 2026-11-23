@@ -30,7 +30,7 @@ export class CitasResolver {
   }
 
   @Mutation(() => Pago)
-  @Roles('administrador', 'coordinador', 'secretaria')
+  @Roles('secretaria')
   confirmarPagoSimulado(@Args('idPago') id: string, @Context() ctx: Contexto) {
     return this.citas.confirmarPagoSimulado(id, ctx.req.user!.sub);
   }
@@ -43,6 +43,7 @@ export class CitasResolver {
   }
 
   @Mutation(() => Cita)
+  @Roles('responsable', 'practicante')
   marcarAsistencia(@Args('idCita') id: string, @Args('asistio') asistio: boolean, @Context() ctx: Contexto) {
     const user = ctx.req.user!;
     return this.citas.marcarAsistencia(id, asistio, user.sub, user.roles);
