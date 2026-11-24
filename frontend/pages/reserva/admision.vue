@@ -5,17 +5,6 @@
       <h1 class="text-h4 mb-2">Admisión inicial</h1>
 
       <v-alert
-        v-if="camposFaltantes.length"
-        class="mb-4"
-        type="warning"
-        variant="tonal"
-        density="compact"
-      >
-        Solo los campos marcados con * son obligatorios. Al guardar, puedes
-        reservar ahora o terminar el registro y volver a reservar más adelante.
-      </v-alert>
-
-      <v-alert
         v-if="registroGuardado"
         class="mb-5"
         type="success"
@@ -30,101 +19,97 @@
       </v-alert>
 
       <v-form v-if="!registroGuardado" @submit.prevent="crearPaciente">
-        <v-row>
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model="admision.nombres"
-              label="Nombres *"
-              maxlength="200"
-              :rules="[reglaRequerido]"
-            />
-          </v-col>
+        <v-defaults-provider :defaults="defaultsCampos">
+          <v-row>
+            <v-col cols="12" sm="4">
+              <v-text-field
+                v-model="admision.nombres"
+                label="Nombres *"
+                maxlength="200"
+                :rules="[reglaRequerido]"
+              />
+            </v-col>
 
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model="admision.primer_apellido"
-              label="Primer apellido *"
-              :rules="[reglaRequerido]"
-              maxlength="200"
-            />
-          </v-col>
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model="admision.segundo_apellido"
-              label="Segundo apellido"
-              maxlength="200"
-            />
-          </v-col>
+            <v-col cols="12" sm="4">
+              <v-text-field
+                v-model="admision.primer_apellido"
+                label="Primer apellido *"
+                :rules="[reglaRequerido]"
+                maxlength="200"
+              />
+            </v-col>
+            <v-col cols="12" sm="4">
+              <v-text-field
+                v-model="admision.segundo_apellido"
+                label="Segundo apellido"
+                maxlength="200"
+              />
+            </v-col>
 
-          <v-col cols="12" sm="6">
-            <v-text-field
-              v-model="admision.ci"
-              label="Carnet de identidad *"
-              maxlength="50"
-              :rules="[reglaRequerido]"
-            />
-          </v-col>
-          <v-col cols="12" sm="3">
-            <v-text-field
-              v-model="admision.complemento"
-              label="Complemento"
-              maxlength="50"
-            />
-          </v-col>
-          <v-col cols="12" sm="3">
-            <v-combobox
-              v-model="admision.expedito_input"
-              :items="expediciones"
-              item-title="valor"
-              item-value="id"
-              :return-object="false"
-              label="Extensión / lugar de expedición"
-              :loading="cargandoParametros"
-              no-data-text="Escribe la extensión"
-              clearable
-            />
-          </v-col>
-          <v-col cols="12" sm="3">
-            <v-text-field
-              v-model.number="admision.edad"
-              label="Edad *"
-              type="number"
-              min="0"
-              max="120"
-              :rules="[reglaEdad]"
-            />
-          </v-col>
-          <v-col cols="12" sm="3">
-            <GeneroSelect v-model="admision.id_genero" tipo="genero" label="Sexo *" />
-          </v-col>
+            <v-col cols="12" sm="6">
+              <v-text-field
+                v-model="admision.ci"
+                label="Carnet de identidad *"
+                maxlength="50"
+                :rules="[reglaRequerido]"
+              />
+            </v-col>
+            <v-col cols="12" sm="3">
+              <v-text-field
+                v-model="admision.complemento"
+                label="Complemento"
+                maxlength="50"
+              />
+            </v-col>
+            <v-col cols="12" sm="3">
+              <ExtensionSelect
+                v-model="admision.expedito_input"
+                label="Extensión / lugar de expedición"
+                permitir-personalizada
+              />
+            </v-col>
+            <v-col cols="12" sm="3">
+              <v-text-field
+                v-model.number="admision.edad"
+                label="Edad *"
+                type="number"
+                min="0"
+                max="120"
+                :rules="[reglaEdad]"
+              />
+            </v-col>
+            <v-col cols="12" sm="3">
+              <GeneroSelect v-model="admision.id_genero" label="Sexo *" />
+            </v-col>
 
-          <v-col cols="12" sm="6">
-            <v-text-field
-              v-model="admision.correo_personal"
-              label="Correo electrónico *"
-              type="email"
-              maxlength="100"
-              :rules="[reglaCorreo]"
-            />
-          </v-col>
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model="admision.movil"
-              label="Celular"
-              maxlength="50"
-            />
-          </v-col>
-          <v-col cols="12" sm="4">
-            <v-text-field
-              v-model="admision.procedencia"
-              label="Procedencia / Municipio"
-              maxlength="200"
-            />
-          </v-col>
-          <v-col cols="12" sm="4">
-            <ReferenciaInstitucionalSelect v-model="idInstitucionReferencia" label="Institución de referencia" />
-          </v-col>
-        </v-row>
+            <v-col cols="12" sm="6">
+              <v-text-field
+                v-model="admision.correo_personal"
+                label="Correo electrónico *"
+                type="email"
+                maxlength="100"
+                :rules="[reglaCorreo]"
+              />
+            </v-col>
+            <v-col cols="12" sm="4">
+              <v-text-field
+                v-model="admision.movil"
+                label="Celular"
+                maxlength="50"
+              />
+            </v-col>
+            <v-col cols="12" sm="4">
+              <v-text-field
+                v-model="admision.procedencia"
+                label="Procedencia / Municipio"
+                maxlength="200"
+              />
+            </v-col>
+            <v-col cols="12" sm="4">
+              <ReferenciaInstitucionalSelect v-model="idInstitucionReferencia" label="Institución de referencia" />
+            </v-col>
+          </v-row>
+        </v-defaults-provider>
 
         <div class="d-flex flex-wrap ga-3">
           <v-btn
@@ -153,17 +138,18 @@
 </template>
 
 <script setup lang="ts">
+import ExtensionSelect from "~/components/common/Fields/ExtensionSelect.vue";
 import GeneroSelect from "~/components/common/Fields/GeneroSelect.vue";
 import ReferenciaInstitucionalSelect from "~/components/common/Fields/ReferenciaInstitucionalSelect.vue";
 
 definePageMeta({ layout: "public" });
 
-interface Parametro {
-  id: number;
-  valor: string;
-  tipo: string;
-  id_estado: number;
-}
+const presentacionCampo = { variant: "outlined", density: "compact", hideDetails: "auto" } as const;
+const defaultsCampos = {
+  VTextField: presentacionCampo,
+  VSelect: presentacionCampo,
+  VAutocomplete: presentacionCampo,
+};
 
 interface PersonaCreada {
   id: string;
@@ -193,18 +179,9 @@ const admision = useState("reserva-admision", () => ({
   correo_personal: "",
 }));
 const registroFinalizado = useState("registro-finalizado", () => false);
-const parametros = ref<Parametro[]>([]);
-const cargandoParametros = ref(false);
 const creando = ref(false);
 const registroGuardado = ref(false);
 const error = ref("");
-
-const expediciones = computed(() =>
-  parametros.value.filter(
-    (item) =>
-      item.id_estado === 1 && normalizar(item.tipo).includes("extension"),
-  ),
-);
 
 // Reglas visuales de cada campo obligatorio
 const reglaRequerido = (v: string) =>
@@ -235,23 +212,6 @@ const camposFaltantes = computed(() => {
   return faltan;
 });
 const formularioValido = computed(() => camposFaltantes.value.length === 0);
-
-onMounted(async () => {
-  cargandoParametros.value = true;
-  try {
-    const result = await $service.graphql<{ parametros: Parametro[] }>({
-      query: "query { parametros { id valor tipo id_estado } }",
-    });
-    parametros.value = result.parametros;
-  } catch (requestError) {
-    error.value =
-      requestError instanceof Error
-        ? requestError.message
-        : "No se pudieron cargar las opciones del formulario.";
-  } finally {
-    cargandoParametros.value = false;
-  }
-});
 
 // Convierte texto vacío en null para no enviar cadenas vacías al backend
 function opcional(valor: string | null | undefined): string | null {
@@ -320,9 +280,5 @@ function reservar() {
 function finalizarRegistro() {
   registroFinalizado.value = true;
   return router.push("/");
-}
-
-function normalizar(value: string): string {
-  return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLocaleLowerCase();
 }
 </script>

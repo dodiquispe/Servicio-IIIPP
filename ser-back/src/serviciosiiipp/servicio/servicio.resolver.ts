@@ -23,10 +23,25 @@ class ServiciosPage {
   count: number;
 }
 
+@ObjectType()
+class ServicioDisponibleReserva {
+  @Field(() => String)
+  id: string;
+
+  @Field(() => String)
+  nombre: string;
+}
+
 @Resolver(() => Servicio)
 @Roles('responsable', 'administrador', 'coordinador')
 export class ServicioResolver {
   constructor(private readonly servicioService: ServicioService) {}
+
+  @Query(() => [ServicioDisponibleReserva])
+  @Public()
+  serviciosDisponiblesReserva(): Promise<ServicioDisponibleReserva[]> {
+    return this.servicioService.listarDisponiblesParaReserva();
+  }
 
   @Mutation(() => Servicio)
   createServicio(

@@ -217,6 +217,11 @@ type ServiciosPage {
   count: Int!
 }
 
+type ServicioDisponibleReserva {
+  id: String!
+  nombre: String!
+}
+
 type HorariosPage {
   rows: [Horario!]!
   count: Int!
@@ -540,6 +545,7 @@ type Query {
   recurso(id: String!): Recurso!
   rolRecursos(limit: Int! = 10, pagina: Int! = 1, search: RolRecursoArgs, order: RolRecursoOrderArgs): RolRecursosPage!
   rolRecurso(id: String!): RolRecurso!
+  serviciosDisponiblesReserva: [ServicioDisponibleReserva!]!
   servicios(limit: Int! = 10, pagina: Int! = 1, search: ServicioArgs, order: ServicioOrderArgs): ServiciosPage!
   servicio(id: String!): Servicio!
   horarios(limit: Int! = 10, pagina: Int! = 1, search: HorarioArgs, order: HorarioOrderArgs): HorariosPage!

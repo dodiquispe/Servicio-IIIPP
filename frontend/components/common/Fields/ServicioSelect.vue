@@ -1,5 +1,10 @@
 <template>
+  <v-alert v-if="sinServicios" :class="$attrs.class" type="info" variant="tonal">
+    No hay servicios disponibles por el momento
+  </v-alert>
   <v-autocomplete
+    v-else
+    v-bind="$attrs"
     :model-value="modelValue"
     :items="servicios"
     item-title="servicio"
@@ -7,6 +12,7 @@
     :return-object="false"
     :label="label"
     :loading="loading"
+    :error-messages="error"
     clearable
     density="compact"
     variant="outlined"
@@ -18,6 +24,10 @@
 </template>
 
 <script setup lang="ts">
+import { $querys } from "~/utils/querys.graphql";
+
+defineOptions({ inheritAttrs: false });
+
 interface Servicio {
   id: string;
   servicio: string;
@@ -27,19 +37,28 @@ interface Servicio {
 const props = defineProps<{
   modelValue: string | null;
   label: string;
+  soloConResponsable?: boolean;
 }>();
 
 const emit = defineEmits<{
   "update:modelValue": [value: string | null];
   "selection": [value: Servicio | null];
+  "selection-reserva": [value: Pick<Servicio, "id" | "servicio"> | null];
 }>();
 
 const { $service } = useNuxtApp();
 
-const servicios = ref<Servicio[]>([]);
-const loading = ref(false);
+const servicios = ref<Array<Pick<Servicio, "id" | "servicio">>>([]);
+const loading = ref(true);
+const error = ref("");
+const sinServicios = computed(() =>
+  props.soloConResponsable && !loading.value && !error.value && servicios.value.length === 0,
+);
 const selectedService = computed(() => servicios.value.find(item => item.id === props.modelValue) ?? null);
-watch(selectedService, value => emit('selection', value));
+watch(selectedService, value => {
+  if (props.soloConResponsable) emit("selection-reserva", value);
+  else emit("selection", value && "id_estado" in value ? value as Servicio : null);
+});
 function updateSelection(value: unknown): void {
   const id = typeof value === 'string' ? value : value && typeof value === 'object' && 'id' in value && typeof value.id === 'string' ? value.id : null;
   emit('update:modelValue', id);
@@ -49,6 +68,15 @@ onMounted(async () => {
   loading.value = true;
 
   try {
+    if (props.soloConResponsable) {
+      const result = await $service.graphql<{
+        serviciosDisponiblesReserva: Array<{ id: string; nombre: string }>;
+      }>({ query: $querys.publicas.serviciosDisponiblesReserva });
+      servicios.value = result.serviciosDisponiblesReserva.map(({ id, nombre }) => ({ id, servicio: nombre }));
+      if (props.modelValue && !selectedService.value) emit("update:modelValue", null);
+      return;
+    }
+
     const result = await $service.graphql<{
       servicios: {
         rows: Servicio[];
@@ -80,11 +108,12 @@ onMounted(async () => {
       (servicio) => servicio.id_estado === 1,
     );
   } catch (cause) {
-    useMessage().error(
+    const mensaje =
       cause instanceof Error
         ? cause.message
-        : "No se pudieron cargar los servicios",
-    );
+        : "No se pudieron cargar los servicios";
+    if (props.soloConResponsable) error.value = mensaje;
+    else useMessage().error(mensaje);
   } finally {
     loading.value = false;
   }

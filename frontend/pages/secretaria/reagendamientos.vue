@@ -24,7 +24,7 @@
       :source-reload="cargarReservas"
     >
       <template #source-filters>
-        <v-select v-model="servicioFiltro" :items="serviciosFiltro" label="Servicio" density="compact" variant="outlined" clearable hide-details class="mb-3" />
+        <ServicioSelect v-model="servicioFiltro" label="Servicio" solo-con-responsable class="mb-3" />
         <v-select v-model="estadoFiltro" :items="estadosFiltro" label="Filtrar por estado" density="compact" variant="outlined" clearable hide-details class="mb-3" />
       </template>
       <template #source-toolbar>
@@ -129,6 +129,7 @@
 </template>
 
 <script setup lang="ts">
+import ServicioSelect from "~/components/common/Fields/ServicioSelect.vue";
 import { $querys } from "~/utils/querys.graphql";
 import type { CrudRecord } from "~/interfaces/app/common";
 
@@ -168,7 +169,6 @@ const estadosFiltro = [
   { title: "Todas", value: null },
 ];
 const servicioFiltro = ref<string | null>(null);
-const serviciosFiltro = computed(() => [...new Map(reservas.value.filter(booking => booking.servicio.id_estado === 1).map(booking => [booking.id_servicio, { title: booking.servicio.servicio, value: booking.id_servicio }])).values()]);
 const reservasFiltradas = computed(() => reservas.value.filter((booking) =>
   (!estadoFiltro.value || booking.estado_reserva === estadoFiltro.value) &&
   (!servicioFiltro.value || booking.id_servicio === servicioFiltro.value),

@@ -38,6 +38,11 @@ const Querys = {
         }
       }
     `,
+    serviciosDisponiblesReserva: `
+      query ServiciosDisponiblesReserva {
+        serviciosDisponiblesReserva { id nombre }
+      }
+    `,
     horariosDisponibles: `
       query HorariosDisponibles($id: String!, $fecha: String!, $id_persona: String) {
         horariosDisponibles(id_servicio: $id, fecha: $fecha, id_persona: $id_persona) {

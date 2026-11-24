@@ -13,16 +13,14 @@
         <NuxtLink to="/">Volver a admisión</NuxtLink>
       </v-alert>
 
-      <v-select
-        v-model="reserva.id_servicio"
-        :items="servicios"
-        item-title="servicio"
-        item-value="id"
+      <ServicioSelect
+        v-if="admision.id_persona"
+        :model-value="reserva.id_servicio || null"
         label="Servicio"
         prepend-inner-icon="mdi-medical-bag"
-        :loading="cargandoServicios"
-        no-data-text="No hay datos registrados"
-        :disabled="!admision.id_persona"
+        solo-con-responsable
+        @update:model-value="reserva.id_servicio = $event ?? ''"
+        @selection-reserva="servicioSeleccionado = $event"
       />
 
       <v-textarea
@@ -64,7 +62,12 @@
         <div v-if="cargandoFechasBloqueadas" class="text-body-2 text-medium-emphasis mt-2" role="status">
           Consultando fechas no disponibles…
         </div>
-        <v-alert v-else-if="errorFechasBloqueadas" type="error" variant="tonal" class="mt-2">
+        <v-alert
+          v-else-if="errorFechasBloqueadas && errorFechasBloqueadas !== errorHorarios"
+          type="error"
+          variant="tonal"
+          class="mt-2"
+        >
           {{ errorFechasBloqueadas }}
         </v-alert>
         <v-btn
@@ -75,11 +78,14 @@
         />
       </div>
 
-      <div v-if="reserva.fecha && reserva.id_servicio" class="mt-6">
+      <div v-if="reserva.fecha && servicioSeleccionado" class="mt-6">
         <h2 class="text-h6 mb-3">Horarios disponibles</h2>
         <div v-if="cargandoHorarios" class="py-4 text-medium-emphasis">
           Consultando disponibilidad…
         </div>
+        <v-alert v-else-if="errorHorarios" type="error" variant="tonal">
+          {{ errorHorarios }}
+        </v-alert>
         <div v-else-if="horarios.length" class="time-list">
           <v-btn
             v-for="slot in horarios"
@@ -114,7 +120,7 @@
           :loading="reservando"
           :disabled="
             !admision.id_persona ||
-            !reserva.id_servicio ||
+            !servicioSeleccionado ||
             !reserva.fecha ||
             !horarioSeleccionado ||
             !reserva.motivo_consulta.trim()
@@ -158,17 +164,10 @@
 </template>
 
 <script setup lang="ts">
+import ServicioSelect from "~/components/common/Fields/ServicioSelect.vue";
 import { $querys } from "~/utils/querys.graphql";
 
 definePageMeta({ layout: "public" });
-
-interface Servicio {
-  id: string;
-  servicio: string;
-  descripcion: string;
-  duracion_sesion_min: number;
-  id_estado: number;
-}
 
 interface HorarioDisponible {
   hora_inicio: string;
@@ -217,12 +216,12 @@ const confirmacion = useState("reserva-confirmacion", () => ({
   estado_pago: "",
   tiene_comprobante: false,
 }));
-const servicios = ref<Servicio[]>([]);
+const servicioSeleccionado = ref<{ id: string; servicio: string } | null>(null);
 const horarios = ref<HorarioDisponible[]>([]);
 const cierreAgenda = ref("");
 const horarioSeleccionado = ref<HorarioDisponible | null>(null);
-const cargandoServicios = ref(false);
 const cargandoHorarios = ref(false);
+const errorHorarios = ref("");
 const reservando = ref(false);
 const error = ref("");
 const dateOffset = ref(0);
@@ -260,37 +259,14 @@ const days = computed(() => {
 });
 const visibleDays = computed(() => days.value.slice(dateOffset.value, dateOffset.value + 7));
 
-onMounted(async () => {
+onMounted(() => {
   if (!admision.value.id_persona) return;
-  cargandoServicios.value = true;
-  try {
-    const result = await $service.graphql<{
-      servicios: { rows: Servicio[] };
-    }>({
-      query: $querys.publicas.servicios,
-    });
-    servicios.value = result.servicios.rows.filter(
-      (service) => service.id_estado === 1,
-    );
-    if (
-      !reserva.value.fecha ||
-      reserva.value.fecha < (days.value[0]?.value ?? "")
-    ) {
-      reserva.value.fecha = days.value[0]?.value ?? "";
-    }
-  } catch (requestError) {
-    error.value =
-      requestError instanceof Error
-        ? requestError.message
-        : "No se pudieron cargar los servicios.";
-  } finally {
-    cargandoServicios.value = false;
-  }
-
+  const hoy = days.value[0]?.value ?? "";
+  if (reserva.value.fecha < hoy) reserva.value.fecha = hoy;
 });
 
 watch(
-  () => [reserva.value.id_servicio, dateOffset.value] as const,
+  () => [servicioSeleccionado.value?.id, dateOffset.value] as const,
   async ([idServicio]) => {
     const requestId = ++bloqueosRequest;
     blockedDates.value = {};
@@ -322,18 +298,18 @@ watch(
 );
 
 watch(
-  () => [reserva.value.id_servicio, reserva.value.fecha] as const,
+  () => [servicioSeleccionado.value?.id, reserva.value.fecha] as const,
   async ([idServicio, fecha]) => {
     const requestId = ++horariosRequest;
     horarioSeleccionado.value = null;
     horarios.value = [];
     cierreAgenda.value = "";
+    errorHorarios.value = "";
     if (!idServicio || !fecha) {
       cargandoHorarios.value = false;
       return;
     }
     cargandoHorarios.value = true;
-    error.value = "";
     try {
       const [availability, closure] = await Promise.all([
         $service.graphql<{ horariosDisponibles: HorarioDisponible[] }>({
@@ -354,7 +330,7 @@ watch(
       cierreAgenda.value = closure.avisoCierreAgenda ?? "";
     } catch (requestError) {
       if (requestId !== horariosRequest) return;
-      error.value =
+      errorHorarios.value =
         requestError instanceof Error
           ? requestError.message
           : "No se pudo consultar la disponibilidad.";
@@ -379,7 +355,7 @@ function changeDatePage(direction: -1 | 1) {
 function continuar() {
   if (
     !admision.value.id_persona ||
-    !reserva.value.id_servicio ||
+    !servicioSeleccionado.value ||
     !reserva.value.fecha ||
     !horarioSeleccionado.value ||
     !reserva.value.motivo_consulta.trim()
@@ -391,9 +367,7 @@ function continuar() {
 
 async function crearReserva() {
   const selectedSlot = horarioSeleccionado.value;
-  const selectedService = servicios.value.find(
-    (service) => service.id === reserva.value.id_servicio,
-  );
+  const selectedService = servicioSeleccionado.value;
   if (!selectedSlot || !selectedService || !admision.value.id_persona) return;
 
   reservando.value = true;

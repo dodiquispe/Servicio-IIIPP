@@ -23,6 +23,7 @@ import { Usuario } from '../../seguridad/usuario/entities/usuario.entity.js';
 import { AccountActivity } from '../../seguridad/usuario/entities/account-activity.entity.js';
 import { Horario } from '../horario/entities/horario.entity.js';
 import { Servicio } from '../servicio/entities/servicio.entity.js';
+import { serviciosConResponsable } from '../servicio/servicio.service.js';
 import { ServicioPersonal } from '../servicio_personal/entities/servicio_personal.entity.js';
 import {
   CanalReserva,
@@ -875,10 +876,18 @@ export class AtencionService {
     minimumLeadMinutes = 0,
   ): Promise<Array<{ hora_inicio: string; hora_fin: string; id_profesional: string; es_responsable_por_fallback: boolean }>> {
     this.validateDate(fecha);
-    if (fecha < boliviaDate(new Date())) {
+    const hoy = boliviaDate(new Date());
+    if (fecha < hoy) {
       throw new BadRequestException('No se puede reservar en una fecha pasada');
     }
-    const servicio = await this.requireActiveService(idServicio, manager.getRepository(Servicio));
+    const servicioRepository = manager.getRepository(Servicio);
+    const servicio = await this.requireActiveService(idServicio, servicioRepository);
+    const sinResponsable = 'Este servicio no tiene un responsable activo.';
+    if (fecha > hoy && !await serviciosConResponsable(servicioRepository)
+      .andWhere('servicio.id = :idServicio', { idServicio })
+      .getExists()) {
+      throw new BadRequestException(sinResponsable);
+    }
     const day = normalize(nombresDias[new Date(`${fecha}T00:00:00Z`).getUTCDay()]);
     const schedules = await manager.getRepository(Horario).find({
       where: { id_servicio: idServicio, id_estado: 1 },
@@ -905,10 +914,12 @@ export class AtencionService {
       where: { fecha, id_estado: 1 },
     });
     const responsibleAssignments = assignments.filter((assignment) =>
-      normalize(assignment.rol?.descripcion ?? '').includes('responsable'),
+      assignment.id_estado === 1 && assignment.usuario.id_estado === 1 &&
+      !assignment.usuario._deleted_at && assignment.rol?.id_estado === 1 &&
+      normalize(assignment.rol.descripcion).includes('responsable'),
     );
-    if (!responsibleAssignments.some((assignment) => assignment.id_estado === 1 && assignment.usuario.id_estado === 1)) {
-      throw new BadRequestException('Este servicio aún no tiene un responsable asignado. Debe asignar un responsable desde el módulo Equipo de trabajo o crear uno nuevo allí.');
+    if (!responsibleAssignments.length) {
+      throw new BadRequestException(sinResponsable);
     }
     if (boliviaHoliday(fecha)) return [];
     let fallbackToResponsible = false;
@@ -948,7 +959,8 @@ export class AtencionService {
       assignments = responsibleAssignments;
     }
     assignments = assignments.filter(
-      (assignment) => assignment.id_estado === 1 && assignment.usuario.id_estado === 1,
+      (assignment) => assignment.id_estado === 1 && assignment.usuario.id_estado === 1 &&
+        !assignment.usuario._deleted_at && assignment.rol?.id_estado === 1,
     );
     const reservations = await manager.getRepository(Reserva).find({ where: { fecha } });
     const citas = await manager.getRepository(Cita).createQueryBuilder('c').innerJoinAndSelect('c.estado', 'e')

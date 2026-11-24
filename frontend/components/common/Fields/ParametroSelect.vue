@@ -33,6 +33,8 @@ const props = withDefaults(
     required?: boolean;
     disabled?: boolean;
     itemValue?: "id" | "valor";
+    coincidenciaParcialTipo?: boolean;
+    opcionAdicional?: { id: number; valor: string };
   }>(),
   { required: false, disabled: false, itemValue: "valor" },
 );
@@ -40,20 +42,34 @@ const emit = defineEmits<{
   "update:modelValue": [value: T | null];
 }>();
 const { $service } = useNuxtApp();
-const opciones = ref<Parametro[]>([]);
+const parametros = ref<Parametro[]>([]);
+const opciones = computed(() =>
+  props.opcionAdicional ? [...parametros.value, props.opcionAdicional] : parametros.value,
+);
 const cargando = ref(false);
 const error = ref("");
 
 onMounted(async () => {
   cargando.value = true;
   try {
+    if (props.coincidenciaParcialTipo) {
+      const result = await $service.graphql<{ parametros: Parametro[] }>({
+        query: "query { parametros { id valor tipo id_estado } }",
+      });
+      parametros.value = result.parametros.filter((item) =>
+        item.id_estado === 1 &&
+        item.tipo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(props.tipo),
+      );
+      return;
+    }
+
     const result = await $service.graphql<{
       parametrosByTipo: Parametro[];
     }>({
       query: $querys.staff.parametrosPorTipo,
       variables: { tipo: props.tipo },
     });
-    opciones.value = result.parametrosByTipo.filter(
+    parametros.value = result.parametrosByTipo.filter(
       (item) => item.id_estado === 1 || (props.tipo === "tipo_atencion" && item.id_estado === 2),
     );
   } catch (requestError) {

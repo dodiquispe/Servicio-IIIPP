@@ -8,14 +8,20 @@
     :loading="loading"
     :disabled="loading || !!error"
     clearable
-    density="compact"
-    variant="outlined"
-    hide-details
+    v-bind="presentacion"
     @update:model-value="emit('update:modelValue', $event)"
   />
 </template>
 
 <script setup lang="ts">
+import { useDefaults } from "vuetify";
+
+const presentacion = useDefaults({
+  density: "compact",
+  variant: "outlined",
+  hideDetails: true,
+} as const, "VAutocomplete");
+
 defineProps<{ modelValue: string | null; label: string }>();
 const emit = defineEmits<{ "update:modelValue": [value: string | null] }>();
 const { $service } = useNuxtApp();
