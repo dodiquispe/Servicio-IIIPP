@@ -24,8 +24,9 @@
           label="Carnet de identidad de la paciente"
           placeholder="Ej. 1234567"
           prepend-inner-icon="mdi-card-account-details"
-          maxlength="50"
+          maxlength="10"
           autocomplete="off"
+          :rules="[validarCi]"
           required
         />
         <v-btn
@@ -90,6 +91,7 @@
 </template>
 
 <script setup lang="ts">
+import { validarCi } from "~/utils/carnet";
 import { $querys } from "~/utils/querys.graphql";
 
 definePageMeta({ layout: "public" });
@@ -137,6 +139,11 @@ const nombrePaciente = computed(
 );
 
 async function buscarPaciente() {
+  const validacion = validarCi(admision.value.ci);
+  if (validacion !== true) {
+    error.value = validacion;
+    return;
+  }
   error.value = "";
   registroFinalizado.value = false;
   pacienteEncontrado.value = false;

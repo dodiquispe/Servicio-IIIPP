@@ -222,177 +222,173 @@
         <v-divider />
         <v-form ref="formRef" @submit.prevent="guardar">
           <v-card-text class="dialog-content">
-            <div class="text-subtitle-1 mb-2">Datos de la persona</div>
-            <v-row dense>
-              <v-col cols="12" sm="5">
-                <v-text-field
-                  v-model="form.nro_documento"
-                  label="Carnet de identidad (CI)"
-                  required
-                  maxlength="50"
-                  :rules="[requerido('El CI')]"
-                  @blur="consultarCI"
-                />
-              </v-col>
-              <v-col cols="12" sm="2">
-                <v-text-field
-                  v-model="form.complemento"
-                  label="Complemento"
-                  maxlength="50"
-                />
-              </v-col>
-              <v-col cols="12" sm="5">
-                <v-select
-                  v-model="form.id_expedito"
-                  label="Lugar de expedición"
-                  :items="expediciones"
-                  item-title="valor"
-                  item-value="id"
-                  :loading="loading"
-                  :disabled="!expediciones.length"
-                  no-data-text="No hay extensiones registradas"
-                  required
-                  :rules="[requerido('El lugar de expedición')]"
-                />
-              </v-col>
-              <v-col cols="12" sm="4">
-                <v-text-field
-                  v-model="form.nombres"
-                  label="Nombres"
-                  required
-                  maxlength="200"
-                  :rules="[requerido('Los nombres')]"
-                />
-              </v-col>
-              <v-col cols="12" sm="4">
-                <v-text-field
-                  v-model="form.primer_apellido"
-                  label="Primer apellido"
-                  maxlength="200"
-                />
-              </v-col>
-              <v-col cols="12" sm="4">
-                <v-text-field
-                  v-model="form.segundo_apellido"
-                  label="Segundo apellido"
-                  maxlength="200"
-                />
-              </v-col>
-              <v-col cols="12" sm="6">
-                <v-select
-                  v-if="generos.length"
-                  v-model="form.id_genero"
-                  label="Género"
-                  :items="generos"
-                  item-title="valor"
-                  item-value="id"
-                  required
-                  :rules="[requerido('El género')]"
-                />
-                <v-text-field
-                  v-else
-                  v-model.number="form.id_genero"
-                  label="ID de género"
-                  type="number"
-                  required
-                  :rules="[requerido('El género')]"
-                />
-              </v-col>
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model="form.movil"
-                  label="Celular"
-                  maxlength="50"
-                />
-              </v-col>
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model="form.correo"
-                  label="Correo electrónico"
-                  type="email"
-                  maxlength="200"
-                  required
-                  :rules="[requerido('El correo'), validarCorreo]"
-                />
-              </v-col>
-            </v-row>
+            <v-defaults-provider :defaults="defaultsCamposPersona">
+              <div class="text-subtitle-1 mb-2">Datos de la persona</div>
+              <v-row dense>
+                <v-col cols="12" sm="5">
+                  <v-text-field
+                    v-model="form.nro_documento"
+                    label="Carnet de identidad (CI)"
+                    required
+                    maxlength="10"
+                    :rules="[validarCi]"
+                    @blur="consultarCI"
+                  />
+                </v-col>
+                <v-col cols="12" sm="2">
+                  <v-text-field
+                    v-model="form.complemento"
+                    label="Complemento"
+                    maxlength="50"
+                  />
+                </v-col>
+                <v-col cols="12" sm="5">
+                  <ExtensionSelect
+                    v-model="form.id_expedito"
+                    label="Lugar de expedición"
+                    no-data-text="No hay extensiones registradas"
+                    required
+                  />
+                </v-col>
+                <v-col cols="12" sm="4">
+                  <v-text-field
+                    v-model="form.nombres"
+                    label="Nombres"
+                    required
+                    maxlength="200"
+                    :rules="[requerido('Los nombres')]"
+                  />
+                </v-col>
+                <v-col cols="12" sm="4">
+                  <v-text-field
+                    v-model="form.primer_apellido"
+                    label="Primer apellido"
+                    maxlength="200"
+                  />
+                </v-col>
+                <v-col cols="12" sm="4">
+                  <v-text-field
+                    v-model="form.segundo_apellido"
+                    label="Segundo apellido"
+                    maxlength="200"
+                  />
+                </v-col>
+                <v-col cols="12" sm="6">
+                  <v-select
+                    v-if="generos.length"
+                    v-model="form.id_genero"
+                    label="Género"
+                    :items="generos"
+                    item-title="valor"
+                    item-value="id"
+                    required
+                    :rules="[requerido('El género')]"
+                  />
+                  <v-text-field
+                    v-else
+                    v-model.number="form.id_genero"
+                    label="ID de género"
+                    type="number"
+                    required
+                    :rules="[requerido('El género')]"
+                  />
+                </v-col>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="form.movil"
+                    label="Celular"
+                    maxlength="50"
+                  />
+                </v-col>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="form.correo"
+                    label="Correo electrónico"
+                    type="email"
+                    maxlength="200"
+                    required
+                    :rules="[requerido('El correo'), validarCorreo]"
+                  />
+                </v-col>
+              </v-row>
 
-            <div class="text-subtitle-1 mt-3 mb-2">Cuenta y asignación</div>
-            <v-row dense>
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model="form.nombre_usuario"
-                  label="Nombre de usuario"
-                  required
-                  maxlength="200"
-                  :rules="[requerido('El nombre de usuario')]"
-                />
-              </v-col>
-              <v-col cols="12" sm="6">
-                <v-select
-                  v-model="form.id_rol"
-                  label="Rol del personal"
-                  :items="rolesPersonal"
-                  item-title="descripcion"
-                  item-value="id"
-                  required
-                  :rules="[requerido('El rol')]"
-                />
-              </v-col>
-              <v-col cols="12" sm="6">
-                <v-select
-                  v-model="form.id_servicio"
-                  label="Servicio"
-                  :items="serviciosActivos"
-                  item-title="servicio"
-                  item-value="id"
-                  required
-                  :rules="[requerido('El servicio')]"
-                />
-              </v-col>
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model="form.fecha_inicio"
-                  label="Vigente desde"
-                  type="date"
-                  required
-                  :rules="[
-                    requerido('La fecha de inicio'),
-                    validarRangoFechas,
-                  ]"
-                />
-              </v-col>
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model="form.fecha_fin"
-                  label="Vigente hasta"
-                  type="date"
-                  clearable
-                  hint="Deje vacío para una asignación sin fecha de finalización."
-                  persistent-hint
-                  :rules="[validarRangoFechas]"
-                />
-              </v-col>
-            </v-row>
-            <v-alert
-              v-if="mensajeCI"
-              class="mt-2"
-              density="compact"
-              :type="ciExiste ? 'info' : 'success'"
-              variant="tonal"
-            >
-              {{ mensajeCI }}
-            </v-alert>
-            <v-alert
-              v-if="esResponsableOcupado"
-              class="mt-2"
-              type="warning"
-              density="compact"
-              variant="tonal"
-            >
-              El servicio ya tiene un responsable asignado en ese período. Se
-              guardará el usuario y su rol, pero no se duplicará la asignación.
-            </v-alert>
+              <div class="text-subtitle-1 mt-3 mb-2">Cuenta y asignación</div>
+              <v-row dense>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="form.nombre_usuario"
+                    label="Nombre de usuario"
+                    required
+                    maxlength="200"
+                    :rules="[requerido('El nombre de usuario')]"
+                  />
+                </v-col>
+                <v-col cols="12" sm="6">
+                  <v-select
+                    v-model="form.id_rol"
+                    label="Rol del personal"
+                    :items="rolesPersonal"
+                    item-title="descripcion"
+                    item-value="id"
+                    required
+                    :rules="[requerido('El rol')]"
+                  />
+                </v-col>
+                <v-col cols="12" sm="6">
+                  <v-select
+                    v-model="form.id_servicio"
+                    label="Servicio"
+                    :items="serviciosActivos"
+                    item-title="servicio"
+                    item-value="id"
+                    required
+                    :rules="[requerido('El servicio')]"
+                  />
+                </v-col>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="form.fecha_inicio"
+                    label="Vigente desde"
+                    type="date"
+                    required
+                    :rules="[
+                      requerido('La fecha de inicio'),
+                      validarRangoFechas,
+                    ]"
+                  />
+                </v-col>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="form.fecha_fin"
+                    label="Vigente hasta"
+                    type="date"
+                    clearable
+                    hint="Deje vacío para una asignación sin fecha de finalización."
+                    persistent-hint
+                    :rules="[validarRangoFechas]"
+                  />
+                </v-col>
+              </v-row>
+              <v-alert
+                v-if="mensajeCI"
+                class="mt-2"
+                density="compact"
+                :type="ciExiste ? 'info' : 'success'"
+                variant="tonal"
+              >
+                {{ mensajeCI }}
+              </v-alert>
+              <v-alert
+                v-if="esResponsableOcupado"
+                class="mt-2"
+                type="warning"
+                density="compact"
+                variant="tonal"
+              >
+                El servicio ya tiene un responsable asignado en ese período. Se
+                guardará el usuario y su rol, pero no se duplicará la asignación.
+              </v-alert>
+            </v-defaults-provider>
           </v-card-text>
           <v-divider />
           <v-card-actions class="px-5 py-3">
@@ -420,6 +416,11 @@
 </template>
 
 <script setup lang="ts">
+const campoPersona = { variant: "outlined", density: "compact", hideDetails: "auto" } as const;
+const defaultsCamposPersona = { VTextField: campoPersona, VSelect: campoPersona, VAutocomplete: campoPersona };
+
+import { validarCi } from "~/utils/carnet";
+import ExtensionSelect from "~/components/common/Fields/ExtensionSelect.vue";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import type { CrudRecord } from "~/interfaces/app/common";
 import {
@@ -612,13 +613,6 @@ const generos = computed(() =>
     (parameter) =>
       parameter.id_estado === 1 &&
       normalizar(parameter.tipo).includes("genero"),
-  ),
-);
-const expediciones = computed(() =>
-  parametros.value.filter(
-    (parameter) =>
-      parameter.id_estado === 1 &&
-      normalizar(parameter.tipo).includes("extension"),
   ),
 );
 const diasSemana = computed(() =>

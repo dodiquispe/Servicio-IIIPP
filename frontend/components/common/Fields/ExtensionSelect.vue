@@ -1,20 +1,11 @@
 <template>
   <ParametroSelect
     v-bind="{ ...presentacion, ...$attrs }"
-    :model-value="personalizada ? -1 : modelValue"
+    :model-value="modelValue"
     :label="label"
     tipo="extension"
     item-value="id"
-    :coincidencia-parcial-tipo="permitirPersonalizada"
-    :opcion-adicional="permitirPersonalizada ? opcionPersonalizada : undefined"
     clearable
-    @update:model-value="seleccionar"
-  />
-  <v-text-field
-    v-if="permitirPersonalizada && personalizada"
-    :model-value="typeof modelValue === 'string' ? modelValue : ''"
-    label="Escribe la extensión"
-    class="mt-2"
     @update:model-value="emit('update:modelValue', $event)"
   />
 </template>
@@ -31,16 +22,9 @@ const presentacion = useDefaults({
   hideDetails: true,
 } as const, "VSelect");
 
-const props = defineProps<{
-  modelValue: number | string | null;
+defineProps<{
+  modelValue: number | null;
   label: string;
-  permitirPersonalizada?: boolean;
 }>();
-const emit = defineEmits<{ "update:modelValue": [value: number | string | null] }>();
-const opcionPersonalizada = { id: -1, valor: "Otra extensión" };
-const personalizada = computed(() => props.permitirPersonalizada && typeof props.modelValue === "string");
-
-function seleccionar(value: number | string | null) {
-  emit("update:modelValue", value === opcionPersonalizada.id ? "" : value);
-}
+const emit = defineEmits<{ "update:modelValue": [value: number | null] }>();
 </script>

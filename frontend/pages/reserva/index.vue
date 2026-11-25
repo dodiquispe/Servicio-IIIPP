@@ -197,7 +197,6 @@ const admision = useState("reserva-admision", () => ({
   correo_personal: "",
   id_genero: null as number | null,
   id_expedito: null as number | null,
-  expedito_input: null as number | string | null,
 }));
 const reserva = useState("reserva-datos", () => ({
   id_servicio: "",

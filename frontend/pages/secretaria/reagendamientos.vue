@@ -246,7 +246,21 @@ async function cargarReservas() {
   }
 }
 
-function seleccionar(booking: Booking) {
+/** Comprueba que el servicio original siga habilitado para reservar. */
+async function seleccionar(booking: Booking) {
+  error.value = "";
+  try {
+    const result = await $service.graphql<{ serviciosDisponiblesReserva: Array<{ id: string }> }>({
+      query: $querys.publicas.serviciosDisponiblesReserva,
+    });
+    if (!result.serviciosDisponiblesReserva.some(({ id }) => id === booking.id_servicio)) {
+      error.value = "El servicio original ya no tiene un responsable activo o dejó de estar disponible.";
+      return;
+    }
+  } catch {
+    error.value = "No se pudo comprobar si el servicio original está disponible.";
+    return;
+  }
   seleccionada.value = booking;
   motivo.value = "";
   fechaNueva.value = "";

@@ -161,158 +161,157 @@
       <v-card class="admin-dialog__card">
         <v-card-title>Crear usuario y asignar rol</v-card-title>
         <v-card-text class="users-dialog__content">
-          <div class="text-subtitle-1 mb-2">Datos de la persona</div>
-          <v-row dense>
-            <v-col cols="12" sm="4">
-              <v-text-field
-                v-model="createForm.persona.nro_documento"
-                label="Carnet de identidad"
-                maxlength="50"
-                required
-                density="compact"
-                variant="outlined"
-              />
-            </v-col>
-            <v-col cols="12" sm="2">
-              <v-text-field
-                v-model="createForm.persona.complemento"
-                label="Complemento"
-                maxlength="50"
-                density="compact"
-                variant="outlined"
-              />
-            </v-col>
-            <v-col cols="12" sm="6">
-              <v-select
-                v-model="createForm.persona.id_expedito"
-                :items="expeditionOptions"
-                item-title="valor"
-                item-value="id"
-                label="Lugar de expedición"
-                :disabled="!expeditionOptions.length"
-                no-data-text="No hay extensiones registradas"
-                required
-                density="compact"
-                variant="outlined"
-              />
-            </v-col>
-            <v-col cols="12" sm="4">
-              <v-text-field
-                v-model="createForm.persona.nombres"
-                label="Nombres"
-                maxlength="200"
-                required
-                density="compact"
-                variant="outlined"
-              />
-            </v-col>
-            <v-col cols="12" sm="4">
-              <v-text-field
-                v-model="createForm.persona.primer_apellido"
-                label="Primer apellido"
-                maxlength="200"
-                density="compact"
-                variant="outlined"
-              />
-            </v-col>
-            <v-col cols="12" sm="4">
-              <v-text-field
-                v-model="createForm.persona.segundo_apellido"
-                label="Segundo apellido"
-                maxlength="200"
-                density="compact"
-                variant="outlined"
-              />
-            </v-col>
-            <v-col cols="12" sm="6">
-              <v-select
-                v-model="createForm.persona.id_genero"
-                :items="genderOptions"
-                item-title="valor"
-                item-value="id"
-                label="Género"
-                required
-                density="compact"
-                variant="outlined"
-              />
-            </v-col>
-            <v-col cols="12" sm="6">
-              <v-text-field
-                v-model="createForm.persona.movil"
-                label="Celular"
-                maxlength="50"
-                density="compact"
-                variant="outlined"
-              />
-            </v-col>
-            <v-col cols="12" sm="6">
-              <v-text-field
-                v-model="createForm.correo"
-                label="Correo electrónico"
-                type="email"
-                maxlength="100"
-                required
-                :rules="[validarCorreo]"
-                density="compact"
-                variant="outlined"
-              />
-            </v-col>
-          </v-row>
-          <div class="text-subtitle-1 mt-2 mb-2">Cuenta y acceso</div>
-          <v-row dense>
-            <v-col cols="12" sm="6">
-              <v-text-field
-                :model-value="generatedUsernamePreview"
-                readonly
-                label="Nombre de usuario"
-                maxlength="20"
-                required
-                density="compact"
-                variant="outlined"
-              />
-            </v-col>
-            <v-col cols="12">
-              <v-select
-                v-model="createForm.id_rol"
-                :items="activeRoles"
-                item-title="descripcion"
-                item-value="id"
-                label="Rol"
-                :loading="loadingRoles"
-                required
-                density="compact"
-                variant="outlined"
-              />
-            </v-col>
-            <v-col v-if="requiereServicio" cols="12">
-              <v-select
-                v-model="createForm.id_servicio"
-                :items="activeServices"
-                item-title="servicio"
-                item-value="id"
-                label="Servicio"
-                :loading="loadingServices"
-                required
-                density="compact"
-                variant="outlined"
-              />
-            </v-col>
-          </v-row>
-          <v-alert
-            v-if="!activeRoles.length && !loadingRoles"
-            class="mb-3"
-            type="warning"
-            variant="tonal"
-          >
-            No hay roles activos disponibles para crear usuarios.
-          </v-alert>
-          <v-alert v-if="createError" type="error" variant="tonal">
-            {{ createError }}
-          </v-alert>
-          <p class="text-body-2 text-medium-emphasis mt-2">
-            La contraseña inicial será el CI y se guardará protegida mediante
-            hash.
-          </p>
+          <v-defaults-provider :defaults="defaultsCamposPersona">
+            <div class="text-subtitle-1 mb-2">Datos de la persona</div>
+            <v-row dense>
+              <v-col cols="12" sm="4">
+                <v-text-field
+                  v-model="createForm.persona.nro_documento"
+                  label="Carnet de identidad"
+                  maxlength="10"
+                  :rules="[validarCi]"
+                  required
+                  density="compact"
+                  variant="outlined"
+                />
+              </v-col>
+              <v-col cols="12" sm="2">
+                <v-text-field
+                  v-model="createForm.persona.complemento"
+                  label="Complemento"
+                  maxlength="50"
+                  density="compact"
+                  variant="outlined"
+                />
+              </v-col>
+              <v-col cols="12" sm="6">
+                <ExtensionSelect
+                  v-model="createForm.persona.id_expedito"
+                  label="Lugar de expedición"
+                  no-data-text="No hay extensiones registradas"
+                  required
+                  density="compact"
+                  variant="outlined"
+                />
+              </v-col>
+              <v-col cols="12" sm="4">
+                <v-text-field
+                  v-model="createForm.persona.nombres"
+                  label="Nombres"
+                  maxlength="200"
+                  required
+                  density="compact"
+                  variant="outlined"
+                />
+              </v-col>
+              <v-col cols="12" sm="4">
+                <v-text-field
+                  v-model="createForm.persona.primer_apellido"
+                  label="Primer apellido"
+                  maxlength="200"
+                  density="compact"
+                  variant="outlined"
+                />
+              </v-col>
+              <v-col cols="12" sm="4">
+                <v-text-field
+                  v-model="createForm.persona.segundo_apellido"
+                  label="Segundo apellido"
+                  maxlength="200"
+                  density="compact"
+                  variant="outlined"
+                />
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-select
+                  v-model="createForm.persona.id_genero"
+                  :items="genderOptions"
+                  item-title="valor"
+                  item-value="id"
+                  label="Género"
+                  required
+                  density="compact"
+                  variant="outlined"
+                />
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model="createForm.persona.movil"
+                  label="Celular"
+                  maxlength="50"
+                  density="compact"
+                  variant="outlined"
+                />
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model="createForm.correo"
+                  label="Correo electrónico"
+                  type="email"
+                  maxlength="100"
+                  required
+                  :rules="[validarCorreo]"
+                  density="compact"
+                  variant="outlined"
+                />
+              </v-col>
+            </v-row>
+            <div class="text-subtitle-1 mt-2 mb-2">Cuenta y acceso</div>
+            <v-row dense>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  :model-value="generatedUsernamePreview"
+                  readonly
+                  label="Nombre de usuario"
+                  maxlength="20"
+                  required
+                  density="compact"
+                  variant="outlined"
+                />
+              </v-col>
+              <v-col cols="12">
+                <v-select
+                  v-model="createForm.id_rol"
+                  :items="activeRoles"
+                  item-title="descripcion"
+                  item-value="id"
+                  label="Rol"
+                  :loading="loadingRoles"
+                  required
+                  density="compact"
+                  variant="outlined"
+                />
+              </v-col>
+              <v-col v-if="requiereServicio" cols="12">
+                <v-select
+                  v-model="createForm.id_servicio"
+                  :items="activeServices"
+                  item-title="servicio"
+                  item-value="id"
+                  label="Servicio"
+                  :loading="loadingServices"
+                  required
+                  density="compact"
+                  variant="outlined"
+                />
+              </v-col>
+            </v-row>
+            <v-alert
+              v-if="!activeRoles.length && !loadingRoles"
+              class="mb-3"
+              type="warning"
+              variant="tonal"
+            >
+              No hay roles activos disponibles para crear usuarios.
+            </v-alert>
+            <v-alert v-if="createError" type="error" variant="tonal">
+              {{ createError }}
+            </v-alert>
+            <p class="text-body-2 text-medium-emphasis mt-2">
+              La contraseña inicial será el CI y se guardará protegida mediante
+              hash.
+            </p>
+          </v-defaults-provider>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -359,7 +358,8 @@
               <v-text-field
                 v-model="editForm.persona.nro_documento"
                 label="Carnet de identidad"
-                maxlength="50"
+                maxlength="10"
+                :rules="[validarCi]"
                 density="compact"
                 variant="outlined"
               />
@@ -374,13 +374,9 @@
               />
             </v-col>
             <v-col cols="12" sm="5">
-              <v-select
+              <ExtensionSelect
                 v-model="editForm.persona.id_expedito"
-                :items="expeditionOptions"
-                item-title="valor"
-                item-value="id"
                 label="Lugar de expedición"
-                :disabled="!expeditionOptions.length"
                 no-data-text="No hay extensiones registradas"
                 required
                 density="compact"
@@ -571,6 +567,11 @@
 </template>
 
 <script setup lang="ts">
+const campoPersona = { variant: "outlined", density: "compact", hideDetails: "auto" } as const;
+const defaultsCamposPersona = { VTextField: campoPersona, VSelect: campoPersona, VAutocomplete: campoPersona };
+
+import { validarCi } from "~/utils/carnet";
+import ExtensionSelect from "~/components/common/Fields/ExtensionSelect.vue";
 import RolSelect from "~/components/common/Fields/RolSelect.vue";
 import type { Filters, CrudRecord } from "~/interfaces/app/common";
 
@@ -850,13 +851,6 @@ const genderOptions = computed(() =>
     (parameter) =>
       parameter.id_estado === 1 &&
       normalizeText(parameter.tipo).includes("genero"),
-  ),
-);
-const expeditionOptions = computed(() =>
-  parameters.value.filter(
-    (parameter) =>
-      parameter.id_estado === 1 &&
-      normalizeText(parameter.tipo).includes("extension"),
   ),
 );
 const userHeaders = [

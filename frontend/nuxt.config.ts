@@ -16,7 +16,7 @@ export default defineNuxtConfig({
     {
       route: "/graphql",
       method: "post",
-      handler: fileURLToPath(new URL("./utils/preview-graphql.ts", import.meta.url)),
+      handler: fileURLToPath(new URL("./utils/preview-graphql.ts", import.meta.url)).replaceAll("\\", "/"),
     },
   ],
   modules: ["vuetify-nuxt-module", "@pinia/nuxt"],

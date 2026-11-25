@@ -50,8 +50,8 @@
               <v-text-field
                 v-model="admision.ci"
                 label="Carnet de identidad *"
-                maxlength="50"
-                :rules="[reglaRequerido]"
+                maxlength="10"
+                :rules="[validarCi]"
               />
             </v-col>
             <v-col cols="12" sm="3">
@@ -63,9 +63,8 @@
             </v-col>
             <v-col cols="12" sm="3">
               <ExtensionSelect
-                v-model="admision.expedito_input"
+                v-model="admision.id_expedito"
                 label="Extensión / lugar de expedición"
-                permitir-personalizada
               />
             </v-col>
             <v-col cols="12" sm="3">
@@ -111,7 +110,7 @@
           </v-row>
         </v-defaults-provider>
 
-        <div class="d-flex flex-wrap ga-3">
+        <div class="d-flex flex-wrap ga-3 mt-4">
           <v-btn
             color="primary"
             type="submit"
@@ -138,6 +137,7 @@
 </template>
 
 <script setup lang="ts">
+import { validarCi } from "~/utils/carnet";
 import ExtensionSelect from "~/components/common/Fields/ExtensionSelect.vue";
 import GeneroSelect from "~/components/common/Fields/GeneroSelect.vue";
 import ReferenciaInstitucionalSelect from "~/components/common/Fields/ReferenciaInstitucionalSelect.vue";
@@ -174,7 +174,6 @@ const admision = useState("reserva-admision", () => ({
   procedencia: "",
   id_genero: null as number | null,
   id_expedito: null as number | null,
-  expedito_input: null as number | string | null,
   movil: "",
   correo_personal: "",
 }));
@@ -199,7 +198,7 @@ const camposFaltantes = computed(() => {
   const a = admision.value;
   if (!a.nombres.trim()) faltan.push("Nombres");
   if (!a.primer_apellido.trim()) faltan.push("Primer apellido");
-  if (!a.ci.trim()) faltan.push("Carnet de identidad");
+  if (validarCi(a.ci) !== true) faltan.push("Carnet de identidad");
   if (a.id_genero === null) faltan.push("Género");
   if (
     !Number.isInteger(a.edad) ||
@@ -247,12 +246,7 @@ async function crearPaciente() {
           primer_apellido: opcional(a.primer_apellido),
           segundo_apellido: opcional(a.segundo_apellido),
           complemento: opcional(a.complemento),
-          id_expedito:
-            typeof a.expedito_input === "number" ? a.expedito_input : null,
-          expedito_personalizado:
-            typeof a.expedito_input === "string"
-              ? opcional(a.expedito_input)
-              : null,
+          id_expedito: a.id_expedito,
           procedencia: opcional(a.procedencia),
           movil: opcional(a.movil),
           id_institucion_referencia: idInstitucionReferencia.value || null,
