@@ -19,9 +19,9 @@ describe('Reportes y agenda de administración', () => {
       reagendamientoRepository: { countBy: vi.fn().mockResolvedValue(0), create: (value: unknown) => value, save },
       reservaRepository: { save },
     });
-    vi.spyOn(service, 'disponibilidad').mockResolvedValue([{ hora_inicio: '11:00:00', hora_fin: '12:00:00', id_profesional: 'profesional', es_responsable_por_fallback: false }]);
+    vi.spyOn(service, 'disponibilidadConManager').mockResolvedValue([{ hora_inicio: '11:00:00', hora_fin: '12:00:00', id_profesional: 'profesional', es_responsable_por_fallback: false }]);
     const input = { id_reserva: 'reserva', motivo: 'Nuevo horario', solicitado_por: 'admin', autorizado_por: 'admin', resultado: ResultadoReagendamiento.AUTORIZADO, fecha_anterior: '2026-11-10', hora_anterior: '10:00:00', fecha_nueva: '2026-11-20', hora_nueva: '11:00:00' };
-    await expect(service.createReagendamiento(input, ['secretaria'])).rejects.toThrow('usuario solicitante');
+    await expect(service.createReagendamiento(input, ['practicante'])).rejects.toThrow('usuario solicitante');
     await expect(service.createReagendamiento(input, ['administrador'])).resolves.toMatchObject({ solicitado_por: 'admin', numero_reagendamiento: 1 });
     expect(reservation.estado_reserva).toBe(EstadoReserva.RESERVADA);
   });

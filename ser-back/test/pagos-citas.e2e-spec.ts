@@ -65,7 +65,7 @@ describe('Admisión, pagos y citas en PostgreSQL', () => {
       const [date] = await manager.query("SELECT (CURRENT_DATE + 30)::text AS fecha, CURRENT_DATE::text AS hoy");
       const genero = await manager.getRepository(Parametro).findOneByOrFail({ tipo: 'genero', id_estado: 1 });
       const personas = new PersonaService(manager.getRepository(Persona), manager.getRepository(InstitucionReferencia));
-      const admissionInput = { nombres: 'Paciente', primer_apellido: 'Prueba', segundo_apellido: '', nro_documento: randomUUID(), id_genero: genero.id, edad: 25 };
+      const admissionInput = { nombres: 'Paciente', primer_apellido: 'Prueba', segundo_apellido: '', nro_documento: randomUUID().replaceAll('-', '').slice(0, 10), id_genero: genero.id, edad: 25 };
       const admission = await personas.admisionInicial(admissionInput as Parameters<PersonaService['admisionInicial']>[0]);
       expect(admission.fecha_ingreso).toBe(date.hoy);
       expect((await personas.findOneByCarnet(admissionInput.nro_documento))?.id).toBe(admission.id);

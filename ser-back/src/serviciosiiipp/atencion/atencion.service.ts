@@ -883,9 +883,10 @@ export class AtencionService {
     const servicioRepository = manager.getRepository(Servicio);
     const servicio = await this.requireActiveService(idServicio, servicioRepository);
     const sinResponsable = 'Este servicio no tiene un responsable activo.';
-    if (fecha > hoy && !await serviciosConResponsable(servicioRepository)
+    const disponible = await serviciosConResponsable(servicioRepository)
       .andWhere('servicio.id = :idServicio', { idServicio })
-      .getExists()) {
+      .getExists();
+    if (!disponible) {
       throw new BadRequestException(sinResponsable);
     }
     const day = normalize(nombresDias[new Date(`${fecha}T00:00:00Z`).getUTCDay()]);

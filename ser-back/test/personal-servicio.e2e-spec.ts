@@ -64,7 +64,7 @@ describe('Personal por servicio y filtros de recursos', () => {
       expect((await service.personalServicio(responsible.id, 'practicante', 100, 1, { id_servicio: other.id })).count).toBe(0);
       await service.update(own.id, { id: own.id, correo: `propio${tag}@example.test` }, responsible.id);
       await expect(service.update(outsider.id, { id: outsider.id, correo: `ajeno${tag}@example.test` }, responsible.id)).rejects.toThrow('servicio');
-      const input = { correo: `${tag}@example.test`, id_rol: responsibleRole.id, id_servicio: empty.id, persona: { nombres: `Nuevo${tag}`, primer_apellido: 'Responsable', nro_documento: randomUUID(), id_genero: genero.id, id_expedito: extension.id } };
+      const input = { correo: `${tag}@example.test`, id_rol: responsibleRole.id, id_servicio: empty.id, persona: { nombres: `Nuevo${tag}`, primer_apellido: 'Responsable', nro_documento: randomUUID().replaceAll('-', '').slice(0, 10), id_genero: genero.id, id_expedito: extension.id } };
       const created = await service.createWithPersonAndRole(input as Parameters<UsuarioService['createWithPersonAndRole']>[0], secretary.id);
       expect((await service.personalServicio(secretary.id, 'responsable', 100, 1, { id_servicio: empty.id })).rows.map(u => u.id)).toEqual([created.id]);
       await service.update(created.id, { id: created.id, correo: `editado${tag}@example.test` }, secretary.id);

@@ -10,6 +10,16 @@ const input = {
 };
 
 describe('Registro de pacientes', () => {
+  it.each([
+    ['1234567890', true],
+    ['12345678901', false],
+    ['', false],
+    ["1' OR 1=1", false],
+  ])('valida el CI %j', async (nro_documento, valido) => {
+    const errors = await validate(plainToInstance(CreatePacienteInput, { ...input, nro_documento }));
+    expect(errors.some(error => error.property === 'nro_documento')).toBe(!valido);
+  });
+
   it('exige los datos obligatorios y admite omitir extensión y apellidos', async () => {
     expect(await validate(plainToInstance(CreatePacienteInput, input))).toHaveLength(0);
     for (const field of ['nombres', 'nro_documento', 'id_genero', 'edad', 'correo_personal']) {

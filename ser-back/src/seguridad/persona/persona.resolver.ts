@@ -10,7 +10,7 @@ import {
 } from '@nestjs/graphql';
 import { PersonaService } from './persona.service.js';
 import { Persona } from './entities/persona.entity.js';
-import { CreatePersonaInput } from './dto/create-persona.input.js';
+import { CreatePersonaInput, VerificarCarnetArgs } from './dto/create-persona.input.js';
 import { UpdatePersonaInput } from './dto/update-persona.input.js';
 import { CreatePacienteInput } from './dto/create-paciente.input.js';
 import type { AuthenticatedRequest } from '../auth/graphql-auth.guard.js';
@@ -77,9 +77,9 @@ export class PersonaResolver {
   @Query(() => PersonaReservable, { nullable: true })
   @Public()
   async personaPorCarnet(
-    @Args('nro_documento') nroDocumento: string,
+    @Args() { nro_documento }: VerificarCarnetArgs,
   ): Promise<PersonaReservable | null> {
-    const person = await this.personaService.findOneByCarnet(nroDocumento);
+    const person = await this.personaService.findOneByCarnet(nro_documento);
     if (!person) return null;
     const [patientStatus] = await this.dataSource.query(
       `SELECT EXISTS (

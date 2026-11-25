@@ -8,8 +8,19 @@ import {
   IsInt,
   Max,
   MaxLength,
+  Matches,
   Min,
 } from 'class-validator';
+import { ciFormatMessage, ciLengthMessage, ciMaxLength, ciPattern } from '../carnet.js';
+
+@ArgsType()
+export class VerificarCarnetArgs {
+  @Field(() => String)
+  @IsNotEmpty({ message: 'El carnet de identidad es obligatorio' })
+  @MaxLength(ciMaxLength, { message: ciLengthMessage })
+  @Matches(ciPattern, { message: ciFormatMessage })
+  nro_documento: string;
+}
 
 @InputType()
 export class CreatePersonaInput {
@@ -42,8 +53,10 @@ export class CreatePersonaInput {
   procedencia?: string | null;
 
   @Field(() => String, { nullable: true })
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'El carnet de identidad es obligatorio' })
   @IsString()
+  @MaxLength(ciMaxLength, { message: ciLengthMessage })
+  @Matches(ciPattern, { message: ciFormatMessage })
   nro_documento: string;
 
   @Field(() => String, { nullable: true })

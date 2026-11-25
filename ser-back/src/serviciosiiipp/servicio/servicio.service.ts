@@ -13,25 +13,13 @@ import { ServicioArgs, ServicioOrderArgs } from './args/servicio.args.js';
 import { CreateServicioInput } from './dto/create-servicio.input.js';
 import { UpdateServicioInput } from './dto/update-servicio.input.js';
 import { Servicio } from './entities/servicio.entity.js';
-import { ServicioPersonal } from '../servicio_personal/entities/servicio_personal.entity.js';
 
+/** Restringe un servicio al catálogo vigente de reservas. */
 export function serviciosConResponsable(repository: Repository<Servicio>) {
-  const query = repository.createQueryBuilder('servicio');
-  const responsable = query.subQuery()
-    .select('1')
-    .from(ServicioPersonal, 'asignacion')
-    .innerJoin('asignacion.usuario', 'usuario')
-    .innerJoin('asignacion.rol', 'rol')
-    .where('asignacion.id_servicio = servicio.id')
-    .andWhere('asignacion.id_estado = :activo AND usuario.id_estado = :activo AND rol.id_estado = :activo')
-    .andWhere('usuario._deleted_at IS NULL')
-    .andWhere('LOWER(rol.descripcion) LIKE :rolResponsable')
-    .andWhere("asignacion.fecha_inicio <= (CURRENT_TIMESTAMP AT TIME ZONE 'America/La_Paz')::date")
-    .andWhere("(asignacion.fecha_fin IS NULL OR asignacion.fecha_fin >= (CURRENT_TIMESTAMP AT TIME ZONE 'America/La_Paz')::date)")
-    .getQuery();
-
-  return query.where('servicio.id_estado = :activo', { activo: 1 })
-    .andWhere(`EXISTS ${responsable}`, { rolResponsable: '%responsable%' });
+  return repository.createQueryBuilder('servicio').where(`EXISTS (
+    SELECT 1 FROM serviciosiiipp.v_servicios_con_responsable disponible
+    WHERE disponible.id_servicio = servicio.id
+  )`);
 }
 
 const sortableColumns = new Set([

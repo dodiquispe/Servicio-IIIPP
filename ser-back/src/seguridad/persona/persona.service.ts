@@ -1,3 +1,4 @@
+import { validarCi, validarExtension } from './carnet.js';
 import {
   BadRequestException,
   Injectable,
@@ -53,13 +54,8 @@ export class PersonaService extends BaseService<Persona> {
   }
 
   async create(input: CreatePersonaInput, actorId?: string): Promise<Persona> {
-    const hasExpedito = input.id_expedito !== undefined && input.id_expedito !== null;
-    const hasCustomExpedito = Boolean(input.expedito_personalizado?.trim());
-    if (hasExpedito && hasCustomExpedito) {
-      throw new BadRequestException(
-        'Seleccione una extensión registrada o una personalizada, no ambas',
-      );
-    }
+    const documento = validarCi(input.nro_documento);
+    await validarExtension(this.personaRepository.manager, input.id_expedito, input.expedito_personalizado);
     if (input.id_institucion_referencia) {
       const institution = await this.institucionRepository.findOneBy({
         id: input.id_institucion_referencia,
@@ -71,9 +67,8 @@ export class PersonaService extends BaseService<Persona> {
         );
       }
     }
-    await this.validateUniqueDocument(input.nro_documento);
+    await this.validateUniqueDocument(documento);
     return this.personaRepository.manager.transaction(async manager => {
-      const documento = input.nro_documento?.trim();
       if (documento) {
         await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`persona-ci-${documento.toLowerCase()}`]);
         const duplicate = await manager.getRepository(Persona).createQueryBuilder('p')
@@ -82,7 +77,7 @@ export class PersonaService extends BaseService<Persona> {
       }
       const persona = await manager.getRepository(Persona).save({
         ...input, id: this.util.getuuid(), nro_documento: documento,
-        expedito_personalizado: input.expedito_personalizado?.trim() || null,
+        expedito_personalizado: null,
         _created_at: new Date(), ...(actorId ? { _user_created: actorId } : {}),
       });
       await manager.getRepository(AccountActivity).save({
@@ -163,10 +158,7 @@ export class PersonaService extends BaseService<Persona> {
   }
 
   async findOneByCarnet(nroDocumento: string): Promise<Persona | null> {
-    const carnet = nroDocumento.trim();
-    if (!carnet) {
-      throw new BadRequestException('El carnet de identidad es obligatorio');
-    }
+    const carnet = validarCi(nroDocumento);
     return this.personaRepository
       .createQueryBuilder('persona')
       .where('LOWER(BTRIM(persona.nro_documento)) = LOWER(:carnet)', { carnet })
@@ -176,8 +168,9 @@ export class PersonaService extends BaseService<Persona> {
 
   async update(id: string, input: UpdatePersonaInput): Promise<Persona> {
     const persona = await this.findOne(id);
+    await validarExtension(this.personaRepository.manager, input.id_expedito, input.expedito_personalizado);
     if (input.nro_documento !== undefined) {
-      await this.validateUniqueDocument(input.nro_documento, id);
+      await this.validateUniqueDocument(validarCi(input.nro_documento), id);
     }
     return this.personaRepository.save(
       this.personaRepository.merge(persona, {

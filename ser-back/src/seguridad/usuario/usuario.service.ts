@@ -1,3 +1,4 @@
+import { validarCi, validarExtension } from '../persona/carnet.js';
 import {
   BadRequestException,
   ForbiddenException,
@@ -126,10 +127,9 @@ export class UsuarioService extends BaseService<Usuario> {
     input: CreateUsuarioCompletoInput,
     actorId: string,
   ): Promise<Usuario> {
-    const carnet = input.persona.nro_documento?.trim();
+    const carnet = validarCi(input.persona.nro_documento);
     const nombres = input.persona.nombres?.trim();
     if (
-      !carnet ||
       !nombres ||
       !input.persona.primer_apellido?.trim() ||
       !input.correo?.trim() ||
@@ -147,6 +147,7 @@ export class UsuarioService extends BaseService<Usuario> {
       const usuarioRolRepository = manager.getRepository(UsuarioRol);
       const rolRepository = manager.getRepository(Rol);
       const now = new Date();
+      await validarExtension(manager, input.persona.id_expedito, input.persona.expedito_personalizado);
       const existingPeople = await personaRepository
         .createQueryBuilder('persona')
         .where('LOWER(BTRIM(persona.nro_documento)) = LOWER(:carnet)', {
@@ -274,10 +275,7 @@ export class UsuarioService extends BaseService<Usuario> {
   async findPersonForAccess(
     nroDocumento: string,
   ): Promise<UsuarioAccessLookup | null> {
-    const carnet = nroDocumento.trim();
-    if (!carnet) {
-      throw new BadRequestException('El carnet de identidad es obligatorio');
-    }
+    const carnet = validarCi(nroDocumento);
 
     const personas = await this.personaRepository
       .createQueryBuilder('persona')
@@ -976,7 +974,7 @@ export class UsuarioService extends BaseService<Usuario> {
           );
         }
         if (personaInput?.nro_documento !== undefined) {
-          const document = personaInput.nro_documento.trim();
+          const document = validarCi(personaInput.nro_documento);
           const duplicate = await personaRepository
             .createQueryBuilder('persona')
             .where('LOWER(BTRIM(persona.nro_documento)) = LOWER(:document)', {
@@ -992,6 +990,7 @@ export class UsuarioService extends BaseService<Usuario> {
           personaInput.nro_documento = document;
         }
         if (personaInput) {
+          await validarExtension(manager, personaInput.id_expedito, personaInput.expedito_personalizado);
           personaRepository.merge(persona, personaInput);
         }
         if (correo_personal !== undefined) {
