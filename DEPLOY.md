@@ -54,6 +54,8 @@ npm run migration:run:prod
 npm run seed:prod
 ```
 
+La migración de servicios crea la vista `serviciosiiipp.v_servicios_con_responsable`. Ejecuta `npm run migration:run:prod` con la conexión directa de Preview antes de desplegar su backend. La misma migración se aplica a producción después de la aprobación y del respaldo.
+
 Haz primero el recorrido completo en Preview. El comando de producción lee únicamente `DATABASE_URL_DIRECT` para conectarse. El seed agrega los catálogos de arranque y crea el administrador si aún no existe uno activo. La segunda ejecución conserva la cuenta. Entra por `/auth/login`, cambia la contraseña desde tu cuenta y vuelve a iniciar sesión. Crea el personal y configura servicios, horarios y asignaciones de acuerdo con la operación del instituto.
 
 ## 4. Crear dos proyectos de Vercel

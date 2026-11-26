@@ -13,11 +13,18 @@ import { Persona } from './entities/persona.entity.js';
 import { CreatePersonaInput, VerificarCarnetArgs } from './dto/create-persona.input.js';
 import { UpdatePersonaInput } from './dto/update-persona.input.js';
 import { CreatePacienteInput } from './dto/create-paciente.input.js';
+import { AltaPersonaInput, AdmisionInicialInput, validarInputAlta } from './dto/alta-persona.input.js';
 import type { AuthenticatedRequest } from '../auth/graphql-auth.guard.js';
 import { PersonaArgs, PersonaOrderArgs } from './args/persona.args.js';
 import { Public, Roles } from '../auth/graphql-auth.decorator.js';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+
+@ObjectType()
+class AdmisionGuardada {
+  @Field()
+  id: string;
+}
 
 @ObjectType()
 class PersonaReservable {
@@ -64,9 +71,22 @@ export class PersonaResolver {
     return this.personaService.createPaciente(input, context.req.user!.sub);
   }
 
-  @Mutation(() => Persona)
+  @Mutation(() => AdmisionGuardada)
   @Public()
-  admisionInicial(@Args('input') input: CreatePersonaInput) { return this.personaService.admisionInicial(input); }
+  async admisionInicial(@Args('input', validarInputAlta) input: AdmisionInicialInput): Promise<AdmisionGuardada> {
+    const persona = await this.personaService.crearPersonaAlta(input);
+    return { id: persona.id };
+  }
+
+  /** Crea la persona en el alta de personal. */
+  @Mutation(() => Persona)
+  @Roles('administrador', 'coordinador', 'responsable', 'secretaria')
+  crearPersonaPersonal(
+    @Args('input', validarInputAlta) input: AltaPersonaInput,
+    @Context() context: { req: AuthenticatedRequest },
+  ) {
+    return this.personaService.crearPersonaAlta(input, context.req.user!.sub);
+  }
 
   @Mutation(() => Persona)
   @Public()

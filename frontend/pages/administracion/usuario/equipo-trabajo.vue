@@ -163,13 +163,17 @@
         <v-card-text class="users-dialog__content">
           <v-defaults-provider :defaults="defaultsCamposPersona">
             <div class="text-subtitle-1 mb-2">Datos de la persona</div>
+            <p v-if="requiereServicio">{{ avisoAltaPersona }}</p>
             <v-row dense>
               <v-col cols="12" sm="4">
                 <v-text-field
                   v-model="createForm.persona.nro_documento"
+                  data-alta="nro_documento"
+                  :error-messages="erroresAlta.nro_documento"
+                  :maxlength="requiereServicio ? reglasPersona.nro_documento.max : 10"
+                  :counter="requiereServicio"
                   label="Carnet de identidad"
-                  maxlength="10"
-                  :rules="[validarCi]"
+                  :rules="requiereServicio ? [] : [validarCi]"
                   required
                   density="compact"
                   variant="outlined"
@@ -178,8 +182,11 @@
               <v-col cols="12" sm="2">
                 <v-text-field
                   v-model="createForm.persona.complemento"
+                  data-alta="complemento"
+                  :error-messages="erroresAlta.complemento"
+                  :maxlength="requiereServicio ? reglasPersona.complemento.max : 50"
+                  :counter="requiereServicio"
                   label="Complemento"
-                  maxlength="50"
                   density="compact"
                   variant="outlined"
                 />
@@ -187,6 +194,8 @@
               <v-col cols="12" sm="6">
                 <ExtensionSelect
                   v-model="createForm.persona.id_expedito"
+                  data-alta="id_expedito"
+                  :error-messages="erroresAlta.id_expedito"
                   label="Lugar de expedición"
                   no-data-text="No hay extensiones registradas"
                   required
@@ -197,8 +206,11 @@
               <v-col cols="12" sm="4">
                 <v-text-field
                   v-model="createForm.persona.nombres"
+                  data-alta="nombres"
+                  :error-messages="erroresAlta.nombres"
+                  :maxlength="requiereServicio ? reglasPersona.nombres.max : 200"
+                  :counter="requiereServicio"
                   label="Nombres"
-                  maxlength="200"
                   required
                   density="compact"
                   variant="outlined"
@@ -207,8 +219,11 @@
               <v-col cols="12" sm="4">
                 <v-text-field
                   v-model="createForm.persona.primer_apellido"
+                  data-alta="primer_apellido"
+                  :error-messages="erroresAlta.primer_apellido"
+                  :maxlength="requiereServicio ? reglasPersona.primer_apellido.max : 200"
+                  :counter="requiereServicio"
                   label="Primer apellido"
-                  maxlength="200"
                   density="compact"
                   variant="outlined"
                 />
@@ -216,8 +231,11 @@
               <v-col cols="12" sm="4">
                 <v-text-field
                   v-model="createForm.persona.segundo_apellido"
+                  data-alta="segundo_apellido"
+                  :error-messages="erroresAlta.segundo_apellido"
+                  :maxlength="requiereServicio ? reglasPersona.segundo_apellido.max : 200"
+                  :counter="requiereServicio"
                   label="Segundo apellido"
-                  maxlength="200"
                   density="compact"
                   variant="outlined"
                 />
@@ -225,6 +243,8 @@
               <v-col cols="12" sm="6">
                 <v-select
                   v-model="createForm.persona.id_genero"
+                  data-alta="id_genero"
+                  :error-messages="erroresAlta.id_genero"
                   :items="genderOptions"
                   item-title="valor"
                   item-value="id"
@@ -237,8 +257,11 @@
               <v-col cols="12" sm="6">
                 <v-text-field
                   v-model="createForm.persona.movil"
+                  data-alta="movil"
+                  :error-messages="erroresAlta.movil"
+                  :maxlength="requiereServicio ? reglasPersona.movil.max : 50"
+                  :counter="requiereServicio"
                   label="Celular"
-                  maxlength="50"
                   density="compact"
                   variant="outlined"
                 />
@@ -246,13 +269,36 @@
               <v-col cols="12" sm="6">
                 <v-text-field
                   v-model="createForm.correo"
+                  data-alta="correo_personal"
+                  :error-messages="erroresAlta.correo_personal"
+                  :maxlength="requiereServicio ? reglasPersona.correo_personal.max : 100"
+                  :counter="requiereServicio"
                   label="Correo electrónico"
                   type="email"
-                  maxlength="100"
                   required
-                  :rules="[validarCorreo]"
+                  :rules="requiereServicio ? [] : [validarCorreo]"
                   density="compact"
                   variant="outlined"
+                />
+              </v-col>
+              <v-col v-if="requiereServicio" cols="12" sm="6">
+                <v-text-field
+                  v-model="createForm.persona.procedencia"
+                  data-alta="procedencia"
+                  :error-messages="erroresAlta.procedencia"
+                  :maxlength="reglasPersona.procedencia.max"
+                  :counter="true"
+                  label="Procedencia / Municipio"
+                />
+              </v-col>
+              <v-col v-if="requiereServicio" cols="12" sm="6">
+                <v-text-field
+                  v-model="createForm.persona.fecha_nacimiento"
+                  data-alta="fecha_nacimiento"
+                  :error-messages="erroresAlta.fecha_nacimiento"
+                  :maxlength="reglasPersona.fecha_nacimiento.max"
+                  :counter="true"
+                  label="Fecha de nacimiento (AAAA-MM-DD)"
                 />
               </v-col>
             </v-row>
@@ -272,6 +318,8 @@
               <v-col cols="12">
                 <v-select
                   v-model="createForm.id_rol"
+                  data-alta="id_rol"
+                  :error-messages="erroresAlta.id_rol"
                   :items="activeRoles"
                   item-title="descripcion"
                   item-value="id"
@@ -285,6 +333,8 @@
               <v-col v-if="requiereServicio" cols="12">
                 <v-select
                   v-model="createForm.id_servicio"
+                  data-alta="id_servicio"
+                  :error-messages="erroresAlta.id_servicio"
                   :items="activeServices"
                   item-title="servicio"
                   item-value="id"
@@ -305,7 +355,7 @@
               No hay roles activos disponibles para crear usuarios.
             </v-alert>
             <v-alert v-if="createError" type="error" variant="tonal">
-              {{ createError }}
+              <div v-for="linea in createError.split('\n')" :key="linea">{{ linea }}</div>
             </v-alert>
             <p class="text-body-2 text-medium-emphasis mt-2">
               La contraseña inicial será el CI y se guardará protegida mediante
@@ -321,16 +371,6 @@
           <v-btn
             color="primary"
             :loading="saving"
-            :disabled="
-              !createForm.persona.nombres.trim() ||
-              !createForm.persona.primer_apellido.trim() ||
-              !createForm.persona.nro_documento.trim() ||
-              !esCorreoValido(createForm.correo) ||
-              !createForm.id_rol ||
-              (requiereServicio && !createForm.id_servicio) ||
-              !createForm.persona.id_genero ||
-              !createForm.persona.id_expedito
-            "
             @click="createUser"
           >
             Crear usuario
@@ -571,6 +611,7 @@ const campoPersona = { variant: "outlined", density: "compact", hideDetails: "au
 const defaultsCamposPersona = { VTextField: campoPersona, VSelect: campoPersona, VAutocomplete: campoPersona };
 
 import { validarCi } from "~/utils/carnet";
+import { avisoAltaPersona, avisoErroresAlta, enfocarAlta, erroresApiAlta, normalizarDatoPersona, reglasPersona, validarAlta } from "~/utils/validacion-alta-persona";
 import ExtensionSelect from "~/components/common/Fields/ExtensionSelect.vue";
 import RolSelect from "~/components/common/Fields/RolSelect.vue";
 import type { Filters, CrudRecord } from "~/interfaces/app/common";
@@ -629,6 +670,8 @@ interface CreateUserForm {
     id_genero: number | null;
     id_expedito: number | null;
     movil: string;
+    procedencia: string;
+    fecha_nacimiento: string;
   };
   nombre_usuario: string;
   correo: string;
@@ -678,6 +721,7 @@ const selectedForEdit = ref<User | null>(null);
 const selectedForReactivate = ref<User | null>(null);
 const createDialog = ref(false);
 const createError = ref("");
+const erroresAlta = ref<Record<string, string>>({});
 const createForm = reactive<CreateUserForm>(emptyCreateForm());
 const existingDialog = ref(false);
 const loadingPeople = ref(false);
@@ -997,6 +1041,7 @@ async function loadCatalogs(): Promise<void> {
 }
 
 function openCreateUser(): void {
+  erroresAlta.value = {};
   Object.assign(createForm, emptyCreateForm());
   createForm.id_rol = activeRoles.value[0]?.id ?? "";
   createForm.id_servicio = scopedMode.value && activeServices.value.length === 1 ? activeServices.value[0]!.id : "";
@@ -1007,7 +1052,15 @@ function openCreateUser(): void {
 async function createUser(): Promise<void> {
   const form = createForm;
   const ci = form.persona.nro_documento.trim();
-  if (
+  const limpiar = requiereServicio.value ? normalizarDatoPersona : (value: string) => value.trim();
+  if (requiereServicio.value) {
+    erroresAlta.value = validarAlta({ ...form.persona, correo_personal: form.correo, id_rol: form.id_rol, id_servicio: form.id_servicio }, ["id_expedito", "id_genero", "id_rol", "id_servicio"]);
+    createError.value = avisoErroresAlta(erroresAlta.value);
+    if (createError.value) {
+      await enfocarAlta(erroresAlta.value);
+      return;
+    }
+  } else if (
     !ci ||
     !form.persona.nombres.trim() ||
     !form.persona.primer_apellido.trim() ||
@@ -1024,24 +1077,28 @@ async function createUser(): Promise<void> {
   createError.value = "";
   try {
     await $service.graphql({
-      query: `mutation($input: CreateUsuarioCompletoInput!) {
-        crearIntegranteEquipo(input: $input) { id }
-      }`,
+      query: requiereServicio.value
+        ? "mutation($input: AltaIntegranteEquipoInput!) { altaIntegranteEquipo(input: $input) { id } }"
+        : "mutation($input: CreateUsuarioCompletoInput!) { crearIntegranteEquipo(input: $input) { id } }",
       variables: {
         input: {
           correo: form.correo.trim() || null,
           id_rol: form.id_rol,
           ...(requiereServicio.value ? { id_servicio: form.id_servicio } : {}),
           persona: {
-            ...form.persona,
+            id_expedito: form.persona.id_expedito,
+            id_genero: form.persona.id_genero,
             nro_documento: ci,
-            nombres: form.persona.nombres.trim(),
-            primer_apellido: form.persona.primer_apellido.trim() || null,
-            segundo_apellido: form.persona.segundo_apellido.trim() || null,
-            complemento: form.persona.complemento.trim() || null,
-            movil: form.persona.movil.trim() || null,
-            correo_personal: form.correo.trim() || null,
-            foto: null,
+            nombres: limpiar(form.persona.nombres),
+            primer_apellido: limpiar(form.persona.primer_apellido) || null,
+            segundo_apellido: limpiar(form.persona.segundo_apellido) || null,
+            complemento: limpiar(form.persona.complemento) || null,
+            movil: limpiar(form.persona.movil) || null,
+            correo_personal: limpiar(form.correo) || null,
+            ...(requiereServicio.value ? {
+              procedencia: normalizarDatoPersona(form.persona.procedencia),
+              fecha_nacimiento: normalizarDatoPersona(form.persona.fecha_nacimiento),
+            } : { foto: null }),
           },
         },
       },
@@ -1049,6 +1106,12 @@ async function createUser(): Promise<void> {
     createDialog.value = false;
     await load();
   } catch (requestError) {
+    if (requiereServicio.value) {
+      erroresAlta.value = erroresApiAlta(requestError);
+      createError.value = avisoErroresAlta(erroresAlta.value) || "No se pudo crear el usuario.";
+      await enfocarAlta(erroresAlta.value);
+      return;
+    }
     createError.value =
       requestError instanceof Error
         ? requestError.message
@@ -1414,6 +1477,8 @@ function emptyCreateForm(): CreateUserForm {
       id_genero: null,
       id_expedito: null,
       movil: "",
+      procedencia: "",
+      fecha_nacimiento: "",
     },
     nombre_usuario: "",
     correo: "",

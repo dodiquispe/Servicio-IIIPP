@@ -15,7 +15,8 @@ import { Usuario } from './entities/usuario.entity.js';
 import { CreateUsuarioInput } from './dto/create-usuario.input.js';
 import { UpdateUsuarioInput } from './dto/update-usuario.input.js';
 import { GrantUsuarioAccessInput } from './dto/grant-usuario-access.input.js';
-import { CreateUsuarioCompletoInput } from './dto/create-usuario-completo.input.js';
+import { AltaIntegranteEquipoInput, CreateUsuarioCompletoInput } from './dto/create-usuario-completo.input.js';
+import { validarInputAlta } from '../persona/dto/alta-persona.input.js';
 import { ReactivateInactiveAccountInput } from './dto/reactivate-inactive-account.input.js';
 import { UsuarioArgs } from './args/usuario.args.js';
 import type {
@@ -135,6 +136,16 @@ export class UsuarioResolver {
   @Roles('administrador', 'coordinador', 'responsable', 'secretaria')
   createTeamMember(
     @Args('input') input: CreateUsuarioCompletoInput,
+    @Context() context: { req: AuthenticatedRequest },
+  ) {
+    return this.usuarioService.createWithPersonAndRole(input, context.req.user!.sub);
+  }
+
+  /** Da de alta a un integrante con los datos estrictos de persona. */
+  @Mutation(() => Usuario)
+  @Roles('administrador', 'coordinador', 'responsable', 'secretaria')
+  altaIntegranteEquipo(
+    @Args('input', validarInputAlta) input: AltaIntegranteEquipoInput,
     @Context() context: { req: AuthenticatedRequest },
   ) {
     return this.usuarioService.createWithPersonAndRole(input, context.req.user!.sub);

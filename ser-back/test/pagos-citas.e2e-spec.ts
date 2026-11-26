@@ -65,11 +65,18 @@ describe('Admisión, pagos y citas en PostgreSQL', () => {
       const [date] = await manager.query("SELECT (CURRENT_DATE + 30)::text AS fecha, CURRENT_DATE::text AS hoy");
       const genero = await manager.getRepository(Parametro).findOneByOrFail({ tipo: 'genero', id_estado: 1 });
       const personas = new PersonaService(manager.getRepository(Persona), manager.getRepository(InstitucionReferencia));
-      const admissionInput = { nombres: 'Paciente', primer_apellido: 'Prueba', segundo_apellido: '', nro_documento: randomUUID().replaceAll('-', '').slice(0, 10), id_genero: genero.id, edad: 25 };
-      const admission = await personas.admisionInicial(admissionInput as Parameters<PersonaService['admisionInicial']>[0]);
+      const extension = await manager.getRepository(Parametro).findOneByOrFail({ tipo: 'extension', id_estado: 1 });
+      const admissionInput = {
+        nombres: 'Paciente', primer_apellido: 'Prueba', segundo_apellido: 'Local',
+        nro_documento: randomUUID().replaceAll('-', '').slice(0, 10), id_genero: genero.id,
+        id_expedito: extension.id, fecha_nacimiento: '2000-01-01',
+        procedencia: 'La Paz', movil: '71234567', correo_personal: 'paciente@example.test',
+      };
+      const admission = await personas.crearPersonaAlta(admissionInput);
       expect(admission.fecha_ingreso).toBe(date.hoy);
       expect((await personas.findOneByCarnet(admissionInput.nro_documento))?.id).toBe(admission.id);
-      await expect(personas.admisionInicial(admissionInput as Parameters<PersonaService['admisionInicial']>[0])).rejects.toThrow();
+      expect(admission.fecha_nacimiento).toBe(admissionInput.fecha_nacimiento);
+      expect((await personas.crearPersonaAlta(admissionInput)).id).toBe(admission.id);
       const fecha = date.fecha as string;
       const days = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
       const day = await manager.getRepository(Parametro).save({ valor: days[new Date(`${fecha}T00:00:00Z`).getUTCDay()]!, tipo: 'dia_semana', id_estado: 1 });

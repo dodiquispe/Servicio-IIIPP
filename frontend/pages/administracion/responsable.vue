@@ -220,31 +220,43 @@
           {{ editando ? "Editar personal y asignación" : "Crear personal y asignar" }}
         </v-card-title>
         <v-divider />
-        <v-form ref="formRef" @submit.prevent="guardar">
+        <v-form ref="formRef" novalidate @submit.prevent="guardar">
           <v-card-text class="dialog-content">
             <v-defaults-provider :defaults="defaultsCamposPersona">
               <div class="text-subtitle-1 mb-2">Datos de la persona</div>
+              <p v-if="altaEstricta">{{ avisoAltaPersona }}</p>
+              <v-alert v-if="avisoAlta" type="error" variant="tonal">
+                <div v-for="linea in avisoAlta.split('\n')" :key="linea">{{ linea }}</div>
+              </v-alert>
               <v-row dense>
                 <v-col cols="12" sm="5">
                   <v-text-field
                     v-model="form.nro_documento"
+                    data-alta="nro_documento"
+                    :error-messages="erroresAlta.nro_documento"
+                    :maxlength="altaEstricta ? reglasPersona.nro_documento.max : 10"
+                    :counter="altaEstricta"
                     label="Carnet de identidad (CI)"
                     required
-                    maxlength="10"
-                    :rules="[validarCi]"
+                    :rules="altaEstricta ? [] : [validarCi]"
                     @blur="consultarCI"
                   />
                 </v-col>
                 <v-col cols="12" sm="2">
                   <v-text-field
                     v-model="form.complemento"
+                    data-alta="complemento"
+                    :error-messages="erroresAlta.complemento"
+                    :maxlength="altaEstricta ? reglasPersona.complemento.max : 50"
+                    :counter="altaEstricta"
                     label="Complemento"
-                    maxlength="50"
                   />
                 </v-col>
                 <v-col cols="12" sm="5">
                   <ExtensionSelect
                     v-model="form.id_expedito"
+                    data-alta="id_expedito"
+                    :error-messages="erroresAlta.id_expedito"
                     label="Lugar de expedición"
                     no-data-text="No hay extensiones registradas"
                     required
@@ -253,63 +265,102 @@
                 <v-col cols="12" sm="4">
                   <v-text-field
                     v-model="form.nombres"
+                    data-alta="nombres"
+                    :error-messages="erroresAlta.nombres"
+                    :maxlength="altaEstricta ? reglasPersona.nombres.max : 200"
+                    :counter="altaEstricta"
                     label="Nombres"
                     required
-                    maxlength="200"
-                    :rules="[requerido('Los nombres')]"
+                    :rules="altaEstricta ? [] : [requerido('Los nombres')]"
                   />
                 </v-col>
                 <v-col cols="12" sm="4">
                   <v-text-field
                     v-model="form.primer_apellido"
+                    data-alta="primer_apellido"
+                    :error-messages="erroresAlta.primer_apellido"
+                    :maxlength="altaEstricta ? reglasPersona.primer_apellido.max : 200"
+                    :counter="altaEstricta"
                     label="Primer apellido"
-                    maxlength="200"
                   />
                 </v-col>
                 <v-col cols="12" sm="4">
                   <v-text-field
                     v-model="form.segundo_apellido"
+                    data-alta="segundo_apellido"
+                    :error-messages="erroresAlta.segundo_apellido"
+                    :maxlength="altaEstricta ? reglasPersona.segundo_apellido.max : 200"
+                    :counter="altaEstricta"
                     label="Segundo apellido"
-                    maxlength="200"
                   />
                 </v-col>
                 <v-col cols="12" sm="6">
                   <v-select
                     v-if="generos.length"
                     v-model="form.id_genero"
+                    data-alta="id_genero"
+                    :error-messages="erroresAlta.id_genero"
                     label="Género"
                     :items="generos"
                     item-title="valor"
                     item-value="id"
                     required
-                    :rules="[requerido('El género')]"
+                    :rules="altaEstricta ? [] : [requerido('El género')]"
                   />
                   <v-text-field
                     v-else
                     v-model.number="form.id_genero"
+                    data-alta="id_genero"
+                    :error-messages="erroresAlta.id_genero"
                     label="ID de género"
                     type="number"
                     required
-                    :rules="[requerido('El género')]"
+                    :rules="altaEstricta ? [] : [requerido('El género')]"
                   />
                 </v-col>
                 <v-col cols="12" sm="6">
                   <v-text-field
                     v-model="form.movil"
+                    data-alta="movil"
+                    :error-messages="erroresAlta.movil"
+                    :maxlength="altaEstricta ? reglasPersona.movil.max : 50"
+                    :counter="altaEstricta"
                     label="Celular"
-                    maxlength="50"
                   />
                 </v-col>
                 <v-col cols="12" sm="6">
                   <v-text-field
                     v-model="form.correo"
+                    data-alta="correo_personal"
+                    :error-messages="erroresAlta.correo_personal"
+                    :maxlength="altaEstricta ? reglasPersona.correo_personal.max : 200"
+                    :counter="altaEstricta"
                     label="Correo electrónico"
                     type="email"
-                    maxlength="200"
                     required
-                    :rules="[requerido('El correo'), validarCorreo]"
+                    :rules="altaEstricta ? [] : [requerido('El correo'), validarCorreo]"
                   />
                 </v-col>
+              <v-col v-if="altaEstricta" cols="12" sm="6">
+                <v-text-field
+                  v-model="form.procedencia"
+                  data-alta="procedencia"
+                  :error-messages="erroresAlta.procedencia"
+                  :maxlength="reglasPersona.procedencia.max"
+                  :counter="true"
+                  label="Procedencia / Municipio"
+                />
+              </v-col>
+              <v-col v-if="altaEstricta" cols="12" sm="6">
+                <v-text-field
+                  v-model="form.fecha_nacimiento"
+                  data-alta="fecha_nacimiento"
+                  :error-messages="erroresAlta.fecha_nacimiento"
+                  :maxlength="reglasPersona.fecha_nacimiento.max"
+                  :counter="true"
+                  label="Fecha de nacimiento (AAAA-MM-DD)"
+                />
+              </v-col>
               </v-row>
 
               <div class="text-subtitle-1 mt-3 mb-2">Cuenta y asignación</div>
@@ -317,32 +368,38 @@
                 <v-col cols="12" sm="6">
                   <v-text-field
                     v-model="form.nombre_usuario"
+                    data-alta="nombre_usuario"
+                    :error-messages="erroresAlta.nombre_usuario"
                     label="Nombre de usuario"
                     required
                     maxlength="200"
-                    :rules="[requerido('El nombre de usuario')]"
+                    :rules="altaEstricta ? [] : [requerido('El nombre de usuario')]"
                   />
                 </v-col>
                 <v-col cols="12" sm="6">
                   <v-select
                     v-model="form.id_rol"
+                    data-alta="id_rol"
+                    :error-messages="erroresAlta.id_rol"
                     label="Rol del personal"
                     :items="rolesPersonal"
                     item-title="descripcion"
                     item-value="id"
                     required
-                    :rules="[requerido('El rol')]"
+                    :rules="altaEstricta ? [] : [requerido('El rol')]"
                   />
                 </v-col>
                 <v-col cols="12" sm="6">
                   <v-select
                     v-model="form.id_servicio"
+                    data-alta="id_servicio"
+                    :error-messages="erroresAlta.id_servicio"
                     label="Servicio"
                     :items="serviciosActivos"
                     item-title="servicio"
                     item-value="id"
                     required
-                    :rules="[requerido('El servicio')]"
+                    :rules="altaEstricta ? [] : [requerido('El servicio')]"
                   />
                 </v-col>
                 <v-col cols="12" sm="6">
@@ -420,6 +477,7 @@ const campoPersona = { variant: "outlined", density: "compact", hideDetails: "au
 const defaultsCamposPersona = { VTextField: campoPersona, VSelect: campoPersona, VAutocomplete: campoPersona };
 
 import { validarCi } from "~/utils/carnet";
+import { avisoAltaPersona, avisoErroresAlta, enfocarAlta, erroresApiAlta, normalizarDatoPersona, reglasPersona, validarAlta } from "~/utils/validacion-alta-persona";
 import ExtensionSelect from "~/components/common/Fields/ExtensionSelect.vue";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import type { CrudRecord } from "~/interfaces/app/common";
@@ -506,6 +564,8 @@ interface FormularioPersonal {
   id_genero: number | null;
   id_expedito: number | null;
   movil: string;
+  procedencia: string;
+  fecha_nacimiento: string;
   nombre_usuario: string;
   correo: string;
   id_rol: string;
@@ -573,6 +633,9 @@ const usuarioExistente = ref<Usuario | null>(null);
 const mensajeCI = ref("");
 const ciExiste = ref(false);
 const form = reactive<FormularioPersonal>(formularioVacio());
+const erroresAlta = ref<Record<string, string>>({});
+const avisoAlta = ref("");
+const altaEstricta = computed(() => !editing.value && !normalizar(roles.value.find(rol => rol.id === form.id_rol)?.descripcion).includes("secretaria"));
 
 const rolesPersonal = computed(() =>
   roles.value.filter((role) => {
@@ -698,6 +761,8 @@ function formularioVacio(): FormularioPersonal {
     id_genero: null,
     id_expedito: null,
     movil: "",
+    procedencia: "",
+    fecha_nacimiento: "",
     nombre_usuario: "",
     correo: "",
     id_rol: "",
@@ -886,6 +951,8 @@ function editarAsignacion(assignment: Asignacion): void {
 }
 
 function resetForm(): void {
+  erroresAlta.value = {};
+  avisoAlta.value = "";
   Object.assign(form, formularioVacio());
   editing.value = null;
   personaExistente.value = null;
@@ -979,6 +1046,14 @@ function datosPersona(): Record<string, unknown> {
 }
 
 async function crearPersona(): Promise<Persona> {
+  if (altaEstricta.value) {
+    const input = { ...datosPersona(), fecha_nacimiento: form.fecha_nacimiento, procedencia: form.procedencia };
+    const result = await $service.graphql<{ crearPersonaPersonal: Persona }>({
+      query: "mutation($input: AltaPersonaInput!) { crearPersonaPersonal(input: $input) { id nombres primer_apellido segundo_apellido nro_documento complemento id_expedito id_genero movil correo_personal } }",
+      variables: { input },
+    });
+    return result.crearPersonaPersonal;
+  }
   const result = await $service.graphql<{ createPersona: Persona }>({
     query: `mutation($datos: CreatePersonaInput!) { createPersona(createPersonaInput: $datos) { id nombres primer_apellido segundo_apellido nro_documento complemento id_expedito id_genero movil correo_personal } }`,
     variables: { datos: datosPersona() },
@@ -1137,8 +1212,27 @@ async function guardarAsignacion(usuario: Usuario): Promise<boolean> {
 }
 
 async function guardar(): Promise<void> {
+  if (altaEstricta.value) {
+    const datos = { ...form, correo_personal: form.correo };
+    erroresAlta.value = validarAlta(datos, ["id_expedito", "id_genero", "id_rol", "id_servicio", "nombre_usuario"]);
+    avisoAlta.value = avisoErroresAlta(erroresAlta.value);
+    if (avisoAlta.value) {
+      await enfocarAlta(erroresAlta.value);
+      return;
+    }
+    for (const campo of ["nombres", "primer_apellido", "segundo_apellido", "nro_documento", "complemento", "procedencia", "movil", "correo", "fecha_nacimiento", "nombre_usuario"] as const) {
+      form[campo] = normalizarDatoPersona(form[campo]);
+    }
+  }
   const validation = await formRef.value?.validate();
-  if (!validation?.valid) return;
+  if (!validation?.valid) {
+    if (altaEstricta.value) {
+      avisoAlta.value = validation?.errors.flatMap(campo => campo.errorMessages).join('\n') || 'Revisa los datos de la asignación.';
+      await nextTick();
+      document.querySelector<HTMLElement>('.dialog-content [aria-invalid="true"]')?.focus();
+    }
+    return;
+  }
   if (
     esResponsableSesion.value &&
     (!serviciosResponsable.value.some(

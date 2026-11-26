@@ -29,7 +29,8 @@ import { UsuarioArgs } from './args/usuario.args.js';
 import { CreateUsuarioInput } from './dto/create-usuario.input.js';
 import { UpdateUsuarioInput } from './dto/update-usuario.input.js';
 import { GrantUsuarioAccessInput } from './dto/grant-usuario-access.input.js';
-import { CreateUsuarioCompletoInput } from './dto/create-usuario-completo.input.js';
+import { AltaIntegranteEquipoInput, CreateUsuarioCompletoInput } from './dto/create-usuario-completo.input.js';
+import { edadDesdeNacimiento } from '../persona/validacion-alta.js';
 import { ReactivateInactiveAccountInput } from './dto/reactivate-inactive-account.input.js';
 import { Usuario } from './entities/usuario.entity.js';
 import { signingKey } from '../auth/graphql-auth.guard.js';
@@ -124,10 +125,11 @@ export class UsuarioService extends BaseService<Usuario> {
   }
 
   async createWithPersonAndRole(
-    input: CreateUsuarioCompletoInput,
+    input: CreateUsuarioCompletoInput | AltaIntegranteEquipoInput,
     actorId: string,
   ): Promise<Usuario> {
-    const carnet = validarCi(input.persona.nro_documento);
+    const fechaNacimiento = 'fecha_nacimiento' in input.persona ? input.persona.fecha_nacimiento : undefined;
+    const carnet = fechaNacimiento ? input.persona.nro_documento : validarCi(input.persona.nro_documento);
     const nombres = input.persona.nombres?.trim();
     if (
       !nombres ||
@@ -147,7 +149,11 @@ export class UsuarioService extends BaseService<Usuario> {
       const usuarioRolRepository = manager.getRepository(UsuarioRol);
       const rolRepository = manager.getRepository(Rol);
       const now = new Date();
-      await validarExtension(manager, input.persona.id_expedito, input.persona.expedito_personalizado);
+      await validarExtension(manager, input.persona.id_expedito, 'expedito_personalizado' in input.persona ? input.persona.expedito_personalizado : null);
+      if (fechaNacimiento) {
+        const genero = await manager.getRepository(Parametro).findOneBy({ id: input.persona.id_genero, tipo: 'genero', id_estado: 1 });
+        if (!genero) throw new BadRequestException('Validación de datos: id_genero: selecciona un género activo');
+      }
       const existingPeople = await personaRepository
         .createQueryBuilder('persona')
         .where('LOWER(BTRIM(persona.nro_documento)) = LOWER(:carnet)', {
@@ -227,6 +233,16 @@ export class UsuarioService extends BaseService<Usuario> {
       persona._updated_at = now;
       persona.nombres = nombres;
       persona.primer_apellido = input.persona.primer_apellido.trim();
+      if (fechaNacimiento) {
+        persona.fecha_nacimiento = fechaNacimiento;
+        persona.edad = edadDesdeNacimiento(fechaNacimiento);
+        persona.segundo_apellido = input.persona.segundo_apellido;
+        persona.procedencia = input.persona.procedencia ?? null;
+        persona.movil = input.persona.movil;
+        persona.id_genero = input.persona.id_genero;
+        persona.id_expedito = input.persona.id_expedito ?? null;
+        persona.complemento = input.persona.complemento || undefined;
+      }
       persona.correo_personal = input.correo.trim();
       await personaRepository.save(persona);
       const nombreUsuario = await this.generateUsername(manager, persona);

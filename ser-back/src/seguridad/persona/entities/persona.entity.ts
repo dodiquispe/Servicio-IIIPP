@@ -41,6 +41,9 @@ export class Persona extends CamposAuditoria {
   @Field(() => Int, { nullable: true })
   edad: number | null;
 
+  @Column({ type: 'date', nullable: true })
+  fecha_nacimiento: string | null;
+
   @Column({ type: 'varchar', length: 200, nullable: true })
   @Field(() => String, { nullable: true })
   procedencia: string | null;

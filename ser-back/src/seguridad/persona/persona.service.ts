@@ -9,6 +9,8 @@ import { IsNull, Repository } from 'typeorm';
 import { BaseService } from '../../utils/BaseService.js';
 import { PersonaArgs, PersonaOrderArgs } from './args/persona.args.js';
 import { CreatePersonaInput } from './dto/create-persona.input.js';
+import { AltaPersonaInput, AdmisionInicialInput } from './dto/alta-persona.input.js';
+import { edadDesdeNacimiento } from './validacion-alta.js';
 import { UpdatePersonaInput } from './dto/update-persona.input.js';
 import { CreatePacienteInput } from './dto/create-paciente.input.js';
 import { Parametro } from '../../public/parametros/entities/parametro.entity.js';
@@ -37,11 +39,17 @@ export class PersonaService extends BaseService<Persona> {
     super(personaRepository);
   }
 
-  async admisionInicial(input: CreatePersonaInput): Promise<Persona> {
-    if (!input.nombres?.trim() || !input.primer_apellido?.trim() || !input.nro_documento?.trim() || !Number.isInteger(input.edad) || input.edad! < 0 || input.edad! > 120) throw new BadRequestException('Complete nombres, primer apellido, CI y edad');
+  /** Valida el catálogo y crea la persona con edad calculada. */
+  async crearPersonaAlta(input: AltaPersonaInput | AdmisionInicialInput, actorId?: string): Promise<Persona> {
     const genero = await this.personaRepository.manager.getRepository(Parametro).findOneBy({ id: input.id_genero, tipo: 'genero', id_estado: 1 });
-    if (!genero) throw new BadRequestException('Seleccione un género activo');
-    return this.create(input);
+    if (!genero) throw new BadRequestException('Validación de datos: id_genero: selecciona un género activo');
+    if (!actorId) {
+      const existente = await this.personaRepository.createQueryBuilder('p')
+        .where('LOWER(BTRIM(p.nro_documento)) = :ci AND p._deleted_at IS NULL', { ci: input.nro_documento.toLowerCase() })
+        .getOne();
+      if (existente) return existente;
+    }
+    return this.create({ ...input, edad: edadDesdeNacimiento(input.fecha_nacimiento) }, actorId);
   }
 
   async createPaciente(input: CreatePacienteInput, actorId: string): Promise<Persona> {
@@ -53,15 +61,25 @@ export class PersonaService extends BaseService<Persona> {
     return this.create({ ...input, nombres: input.nombres.trim(), correo_personal: input.correo_personal.trim() }, actorId);
   }
 
-  async create(input: CreatePersonaInput, actorId?: string): Promise<Persona> {
-    const documento = validarCi(input.nro_documento);
-    await validarExtension(this.personaRepository.manager, input.id_expedito, input.expedito_personalizado);
+  async create(input: Omit<CreatePersonaInput, 'id_anterior'> & { id_anterior?: number; fecha_nacimiento?: string }, actorId?: string): Promise<Persona> {
+    const documento = input.fecha_nacimiento ? input.nro_documento : validarCi(input.nro_documento);
+    try {
+      await validarExtension(this.personaRepository.manager, input.id_expedito, input.expedito_personalizado);
+    } catch (error) {
+      if (input.fecha_nacimiento && error instanceof BadRequestException) {
+        throw new BadRequestException('Validación de datos: id_expedito: selecciona una extensión activa');
+      }
+      throw error;
+    }
     if (input.id_institucion_referencia) {
       const institution = await this.institucionRepository.findOneBy({
         id: input.id_institucion_referencia,
         id_estado: 1,
       });
       if (!institution) {
+        if (input.fecha_nacimiento) {
+          throw new BadRequestException('Validación de datos: id_institucion_referencia: selecciona una institución activa');
+        }
         throw new BadRequestException(
           'La institución de referencia seleccionada no está activa',
         );
